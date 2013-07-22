@@ -1,7 +1,7 @@
 /*
  * file: camCtrl.h
  *
- * purpose: define the camera control class for hanlding GigE cameras using 
+ * purpose: define the camera control class for hanlding cameras using 
  *          Vimba SDK from Advancded Vision Technologies. Hide the initialization
  *          of the camera handler, enumeration of the cameras, etc. 
  *
@@ -15,38 +15,78 @@
 
 #include <VimbaCPP/Include/VimbaCPP.h>
 
+#include "camCtrlInterface.h"
+
 using namespace AVT::VmbAPI;
 
 namespace VisMe{
 
+  
+  class UserCameraFactory;
+  class commonCamera;
   class GigECamera;
-  class CamCtrlVmbAPI {
+  class USBCamera;
+
+  typedef SP_DECL( UserCameraFactory )  UserCameraFactory_t;  
+  typedef SP_DECL( GigECamera )         GigECamera_t;
+  typedef SP_DECL( USBCamera )          USBCamera_t;
+  typedef SP_DECL( Camera )             Camera_t;
+
+  class CamCtrlVmbAPI : public CamCtrlInterface {
 
   public:
-    CamCtrl(void);
-   ~CamCtrl(void);
+    CamCtrlVmbAPI(void);
+   ~CamCtrlVmbAPI(void);
+
+   //The functionality for CamCtrlInterface:
+   void selectCamera( int id );
+   void selectCamera( const char *pStrId );
+
+   void captureImage( void ) ;
+   void captureStream( void ) ;
+   
+   void setParameter( camParam_t parameter, void *value, int valueByteSize );
+
+   void * getImageBuffer( int id = 0 );
+   void getImageSize( int *width, int *height, int *channels );
+
 
   private:
 
     int Init();
 
-    void findCameras();
+    int findCameras();
     void freeCameras();
 
     VimbaSystem &Vimba; //Note reference! 
 
-    CameraPtrVector m_cameras;
-    
+    CameraPtrVector m_cameras;  // A vector of std::shared_ptr<AVT::VmbAPI::Camera> objects
+    int m_selectedCameraId;
+    CameraPtr pSelectedCamera;
+
     VmbVersionInfo_t m_VimbaVersion;
     VmbInterfaceType m_ifType;
     VmbErrorType err;
 
   };
-  
-  class GigECamera: 
-  public Camera
-  {
-  public:
+
+
+/*=============================================================================*/
+class commonCamera
+{
+
+ public:
+  //VmbHandle_t handle; //Handle for opened camera
+  VmbFrame_t frameBuffer[3];
+
+  int m_width;
+  int m_height;
+};
+
+class GigECamera: 
+ public Camera, public commonCamera
+{
+public:
     GigECamera(     const char         *pCameraID,
                     const char         *pCameraName,
                     const char         *pCameraModel,
@@ -58,8 +98,45 @@ namespace VisMe{
                     VmbAccessModeType   interfacePermittedAccess );
 
     void addonGigE( std::string &info );    // custom camera function
-  };
 
+};  
+
+class USBCamera: 
+    public Camera, public commonCamera
+{
+public:
+    USBCamera(      const char         *pCameraID,
+                    const char         *pCameraName,
+                    const char         *pCameraModel,
+                    const char         *pCameraSerialNumber,
+                    const char         *pInterfaceID,
+                    VmbInterfaceType    interfaceType,
+                    const char         *pInterfaceName,
+                    const char         *pInterfaceSerialNumber,
+                    VmbAccessModeType   interfacePermittedAccess );
+    
+    void addonUSB( std::string &info );     // custom camera function
+};  
+ 
+/*======*/
+
+class UserCameraFactory :
+  public ICameraFactory
+{
+  public:
+
+    CameraPtr CreateCamera( const char *pCameraID,
+                            const char *pCameraName,
+                            const char *pCameraModel,
+                            const char *pCameraSerialNumber,
+                            const char *pInterfaceID,
+                            VmbInterfaceType interfaceType,
+                            const char *pInterfaceName,
+                            const char *pInterfaceSerialNumber,
+                            VmbAccessModeType interfacePermittedAccess);
+
+
+};
 
 
 }; //namespace VisMe

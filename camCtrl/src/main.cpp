@@ -21,8 +21,7 @@ int main(int argc, char** argv)
 {
   
   CamCtrlVmbAPI *camCtrl = new CamCtrlVmbAPI();
-
-
+  camCtrl->Init();
 
   delete camCtrl;
 

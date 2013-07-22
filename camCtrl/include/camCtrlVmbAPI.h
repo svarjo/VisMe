@@ -21,6 +21,7 @@ using namespace AVT::VmbAPI;
 
 namespace VisMe{
 
+  
   class UserCameraFactory;
   class GigECamera;
   class USBCamera;
@@ -37,43 +38,42 @@ namespace VisMe{
    ~CamCtrlVmbAPI(void);
 
    //The functionality for CamCtrlInterface:
-   void openCamera( int camId ) ;
-   void closeCamera( int camId ) ;
+   void selectCamera( int id );
+   void selectCamera( const char *pStrId );
+
+   void captureImage( void ) ;
+   void captureStream( void ) ;
    
-   void captureImage( BUFFER_TYPE *buffer ) ;
-   void captureStream( BUFFER_TYPE *buffer ) ;
-   
-   void setParameter( camParam_t parameter, void *value, int valueByteSize) ;
-    
-   
+   void setParameter( camParam_t parameter, void *value, int valueByteSize );
+   void getImageSize( int *width, int *height, int *channels );
 
 
+   //
+   int Init();
 
   private:
 
-    int Init();
+   int findCameras();
+   void freeCameras();
 
-    int findCameras();
-    void freeCameras();
+   VimbaSystem &Vimba; //Note reference! 
 
-    VimbaSystem &Vimba; //Note reference! 
+   CameraPtrVector m_cameras;  // A vector of std::shared_ptr<AVT::VmbAPI::Camera> objects
+   int m_selectedCameraId;
+   CameraPtr pSelectedCamera;
 
-    CameraPtrVector m_cameras;
+   VmbInt64_t *pPayloadSize;
 
-    std::vector<GigECamera_t> m_GigEcameras;
-    std::vector<USBCamera_t>  m_USBcameras;
-
-    VmbVersionInfo_t m_VimbaVersion;
-    VmbInterfaceType m_ifType;
-    VmbErrorType err;
+   VmbVersionInfo_t m_VimbaVersion;
+   VmbInterfaceType m_ifType;
+   VmbErrorType err;
 
   };
 
 
 /*=============================================================================*/
-
 class GigECamera: 
-    public Camera
+ public Camera
 {
 public:
     GigECamera(     const char         *pCameraID,
@@ -87,6 +87,7 @@ public:
                     VmbAccessModeType   interfacePermittedAccess );
 
     void addonGigE( std::string &info );    // custom camera function
+
 };  
 
 class USBCamera: 
