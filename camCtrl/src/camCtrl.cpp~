@@ -1,0 +1,63 @@
+//#include <sstream>
+#include <iostream>
+#include <ostream>
+#include <vector>
+
+#include "camCtrl.h"
+
+
+namespace VisMe{
+
+  CamCtrl::CamCtrl() : m_Vimba( AVT::VmbAPI::VimbaSystem::GetInstance() ) //OBS m_Vimba is reference to a Vimba system engine - and must be initialized at the beginning of the constructor.
+{
+	Init();
+}
+
+CamCtrl::~CamCtrl()
+{
+  if( !m_cameras.empty() ){
+    freeCameras();
+  }
+
+  m_Vimba.Shutdown();
+}
+
+int CamCtrl::Init()
+{ 
+  err = m_Vimba.Startup();
+  if (err != VmbErrorSuccess ){
+    std::cerr << "CamCtrl::Init : VIMBA sytem startup failed : "<< err << std::endl;
+    return -1;
+  }
+
+  err = m_Vimba.QueryVersion( m_VimbaVersion );
+  if (err != VmbErrorSuccess ){
+    std::cerr << "CamCtrl::Init : version Query failed: " << err << std::endl;
+    return -2;
+  }
+  std::cout << "Vimba " << m_VimbaVersion.major << "." << m_VimbaVersion.minor << " initialized" << std::endl;
+
+
+
+
+  findCameras();
+}
+
+
+
+void CamCtrl::findCameras()
+{
+
+  //  err = m_Vimba.GetCameras(m_cameras);
+
+  std::cout << "FindCameras Stub" << std::endl;
+}
+
+
+void CamCtrl::freeCameras()
+{
+
+}
+
+
+}//namespace VisMe

@@ -1,0 +1,14 @@
+#ifndef CAM_CTRL_BASE_H 
+#define CAM_CTRL_BASE_H 
+
+namespace VisMe{
+
+  class CamCtrlInterface{
+
+
+
+  }
+
+};//End namespace VisMe
+
+#endif

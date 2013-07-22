@@ -1,0 +1,55 @@
+#ifndef VISME_CMACTRL_H
+#define VISME_CAMCTRL_H
+
+#include <VimbaCPP/Include/VimbaCPP.h>
+
+using namespace AVT::VmbAPI;
+
+
+namespace VisMe{
+
+  class GigECamera;
+
+  class CamCtrl {
+
+  public:
+    CamCtrl(void);
+   ~CamCtrl(void);
+
+    int Init();
+
+  private:
+    void findCameras();
+    void freeCameras();
+
+    VimbaSystem &m_Vimba;
+    CameraPtrVector m_cameras;
+    
+    VmbVersionInfo_t m_VimbaVersion;
+    VmbInterfaceType m_ifType;
+    VmbErrorType err;
+
+  };
+  
+  class GigECamera: 
+  public Camera
+  {
+  public:
+    GigECamera(     const char         *pCameraID,
+                    const char         *pCameraName,
+                    const char         *pCameraModel,
+                    const char         *pCameraSerialNumber,
+                    const char         *pInterfaceID,
+                    VmbInterfaceType    interfaceType,
+                    const char         *pInterfaceName,
+                    const char         *pInterfaceSerialNumber,
+                    VmbAccessModeType   interfacePermittedAccess );
+
+    void addonGigE( std::string &info );    // custom camera function
+  };
+
+
+
+}; //namespace VisMe
+
+#endif //VISME_CAMCTRL_H

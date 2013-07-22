@@ -1,0 +1,104 @@
+===========================================================================
+
+  AVT GigE Transport Layer - Release Notes 
+  
+  Version: 1.2.0
+  Date:    2013-Jun-24
+===========================================================================
+
+--------------------------------
+Components and Version Reference  
+--------------------------------
+
+AVT Genicam Transport Layer modules
+-----------------------------------
+  GigE Transport Layer (AVTGigETL.cti)             1.2.0
+
+Tools
+-----
+  AVTDriverInstaller (AVTDriverInstaller.exe)      1.0.3
+  
+---------------------
+Hardware Requirements
+---------------------
+PC or laptop with 1 GHz 32-bit (x86) or 64-bit (x64) processor or better.
+
+Additionally a built-in Gigabit Ethernet network interface or Gigabit Ethernet 
+network card (one or more)is required.
+
+
+---------------------------
+Supported Operating Systems
+---------------------------
+The AVT GigE Transport Layer is designed for the 32-bit or 64-bit operating systems:
+
+   Windows XP
+   Windows 7
+   Windows 8  
+   
+   Please note that Windows RT is not supported with this version of AVT GigE TL.
+   
+   
+   Ubuntu (Tested with version 12.04 LTS "Precise Pangolin")
+   Debian (Tested with version 6 "Squeeze")
+   Fedora (Tested with version 17 "Beefy Miracle")
+   
+   AVT GigE Transport Layer is most likely while not guaranteed to be compatible to
+   follow up versions of the aforementioned distributions.
+
+
+------------
+Installation
+------------            
+The AVT GigE Transport Layer is part of the AVT Vimba SDK. For instructions how 
+to install this module please refer to the AVT Vimba SDK User Guide.
+
+
+---------------------
+Changes and Bug-fixes
+---------------------
+- Improved performance in case of many events
+- Restriction to eight cameras removed
+- Corrected Heartbeat feature
+- Fixed support for small packets
+
+
+------------
+Known Issues
+------------
+GigE Filter Driver:
+- Disabling the AVT GigE Filter Driver while it is in use might lead to 
+  unexpected behavior up to blue screen
+
+
+---------------------------------------------
+Correlations with other AVT Software Packages
+---------------------------------------------
+Please refer to the AVT Vimba SDK Release Notes.
+
+
+------------------------------
+AVT Technical Software Support
+------------------------------
+You can reach the AVT Technical Software Support via the corresponding contact 
+form for your region:
+
+   Asia Pacific
+   ------------
+        http://www.alliedvisiontec.com/apac/support/contact-support.html 
+   
+   Europe, Middle East and Africa 
+   ------------------------------
+        http://www.alliedvisiontec.com/emea/support/contact-support.html
+  
+   Germany
+   -------
+        http://www.alliedvisiontec.com/de/support/support-kontaktieren.html
+
+   The Americas
+   ------------
+        http://www.alliedvisiontec.com/us/support/contact-support.html
+
+   China
+   ------------
+        http://www.alliedvisiontec.com/cn/support/contact-support.html
