@@ -19,7 +19,7 @@ namespace VisMe{
     virtual void captureStream( void ) = 0;
 
     virtual void setParameter( camParam_t parameter, void *value, int valueSize) = 0;
-    virtual void getImageSize( int *width, int *height, int *channels)=0;
+    virtual void getImageSize( int *width, int *height, int *channels, int *bitsPerPixel)=0;
 
   };
 

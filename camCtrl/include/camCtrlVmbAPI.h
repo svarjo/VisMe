@@ -45,7 +45,7 @@ namespace VisMe{
    void captureStream( void ) ;
    
    void setParameter( camParam_t parameter, void *value, int valueByteSize );
-   void getImageSize( int *width, int *height, int *channels );
+   void getImageSize( int *width, int *height, int *channels, int *bitsPerPixel );
 
 
    //
@@ -62,7 +62,8 @@ namespace VisMe{
    int m_selectedCameraId;
    CameraPtr pSelectedCamera;
 
-   VmbInt64_t *pPayloadSize;
+   VmbInt64_t *m_payloadSize;   
+   FramePtrVector *m_frames;
 
    VmbVersionInfo_t m_VimbaVersion;
    VmbInterfaceType m_ifType;

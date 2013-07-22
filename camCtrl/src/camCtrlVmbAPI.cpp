@@ -14,7 +14,7 @@ namespace VisMe{
 				   //OBS m_Vimba is reference to a Vimba system engine 
 				   //and must be initialized at the beginning of the constructor.
   {
-    //    Init();
+    Init();
   }
 
   /********************************************************************
@@ -57,35 +57,67 @@ namespace VisMe{
     }
     
     findCameras();
-    pSelectedCamera = CameraPtr();
-    pSelectedCamera = m_cameras[0];   
 
-    pPayloadSize = new VmbInt64_t[m_cameras.size()];
+    if (!m_cameras.empty()){
+      pSelectedCamera = m_cameras[0]; 
+    }
+    else{
+      std::cout << "Not a single usable camera was found! Exiting..." << std::endl;
+      return 0;
+    }
+    
+    m_payloadSize = new VmbInt64_t[m_cameras.size()];
     
     // Initialize (all) the found cameras
-    for ( CameraPtrVector::iterator iter = m_cameras.begin();
-	  m_cameras.end() != iter;
-	  iter++)
+    //    for ( CameraPtrVector::iterator iter = m_cameras.begin(); m_cameras.end() != iter;  iter++)
+    for ( int id = 0; id < m_cameras.size(); id++)
       {
 	std::string strID;
-	(*iter)->GetID(strID);
+	m_cameras[id]->GetID(strID);
 
-	err = (*iter)->Open( VmbAccessModeFull );
+	err = m_cameras[id]->Open( VmbAccessModeFull ); //Now camera should be open and usable.
 	
 	if (err != VmbErrorSuccess ){
 	  std::cerr << "camCtrlVmbAPI::Init - could not open camera " << strID <<  " err: " << err << std::endl;
 	  return(-3);
 	}
-
+	
 	FeaturePtr feature;
-	VmbInt64_t framePayloadSize;
-	err == (*iter)->GetFeatureByName( "PayloadSize", feature);
+	VmbInt64_t value;
 
+	err = m_cameras[id]->GetFeatureByName( "PixelFormat", feature);
+	if (err != VmbErrorSuccess){
+	  std::cerr << "camCtrlVmbAPI::Init - could not get pixelFormat feature" << std::endl;
+	}
+
+	//Try to set as high precision Mono as possible
+	err = feature->SetValue( VmbPixelFormatMono16 );
+	if (err != VmbErrorSuccess ){ 
+	  err = feature->SetValue( VmbPixelFormatMono14 );
+	  if (err != VmbErrorSuccess ){ 
+	    err = feature->SetValue( VmbPixelFormatMono12 );
+	    if (err != VmbErrorSuccess ){ 
+	      err = feature->SetValue( VmbPixelFormatMono10 );
+	      if (err != VmbErrorSuccess ){ 
+		err = feature->SetValue( VmbPixelFormatMono8 );
+		if (err != VmbErrorSuccess ){ 
+		  std::cerr << "Could not set camera pixel format to gray (mono8-mono16)" << std::endl;
+		} else{ std::cout << "\tgray 8 bpp camera set" << std::endl; }
+	      } else{ std::cout << "\tgray 10 bpp camera set" << std::endl; }
+	    } else{ std::cout << "\tgray 12 bpp camera set" << std::endl; }
+	  } else{ std::cout << "\tgray 14 bpp camera set" << std::endl; }
+	}else{ std::cout << "\tgray 16 bpp camera set" << std::endl; }
+
+	err = m_cameras[id]->GetFeatureByName( "PayloadSize", feature); //Required when aquiring frames
 	if (err != VmbErrorSuccess ){
 	  std::cerr << "camCtrlVmbAPI::Init - payloadSize not received from " << strID <<  " err: " << err << std::endl;
 	  return(-3);
-	}
+	}	
+	feature->GetValue( value );
+	m_payloadSize[id]=value;	
       }
+
+    m_frames = new FramePtrVector[m_cameras.size()];
 
   }
 
@@ -199,7 +231,7 @@ namespace VisMe{
 
     }
 
-    std::cout << "Found " << m_cameras.size() << " AVT Vimba cameras " << std::endl;
+    std::cout << "Found " << m_cameras.size() << " AVT Vimba camera(s) " << std::endl;
   }
 
 
@@ -213,7 +245,8 @@ namespace VisMe{
       m_cameras.clear();
     }
 
-    delete pPayloadSize;
+    delete m_payloadSize;
+    delete m_frames;
 
   }
 
@@ -247,7 +280,6 @@ namespace VisMe{
   /*****************************************************************************/
   /* Override the virtual interface functions                                  */
   /*****************************************************************************/
-
   /*
    * Select the active camera by enumeration id (int)
    */
@@ -266,6 +298,33 @@ namespace VisMe{
 
 void CamCtrlVmbAPI::captureImage( void )
 {
+
+  //Define the capture buffer (frame)
+  FramePtr fP;
+  fP.reset( new Frame( m_payloadSize[ m_selectedCameraId ] ) );
+  err = pSelectedCamera->AnnounceFrame( fP );
+  if (err != VmbErrorSuccess ){
+    std::cerr << "CamCtrlVmbAPI::captureImage - could not AnnounceFrame for camera" << std::endl;
+    return;
+  }
+
+  pSelectedCamera->StartCapture();
+  pSelectedCamera->QueueFrame( fP );
+
+  FeaturePtr pF;
+  err = pSelectedCamera->GetFeatureByName( "AcquisitionStart", pF );
+  if (err != VmbErrorSuccess){
+    std::cerr << "CamCtrlVmbAPI::captureImage - cound not aquire AquisitionStart" << std::endl;
+    return;
+  }
+
+  err = pF->RunCommand();
+  if (err != VmbErrorSuccess){
+    std::cerr << "CamCtrlVmbAPI::captureImage - error with AquisitionStart" << std::endl;
+    return;    
+  }
+
+  
   std::cout << "captureImage Stub" << std::endl;
 }
 
@@ -280,9 +339,76 @@ void CamCtrlVmbAPI::setParameter( camParam_t parameter, void *value, int valueBy
 }
 
 
-void CamCtrlVmbAPI::getImageSize(int *width, int *height, int *channels)
+void CamCtrlVmbAPI::getImageSize(int *width, int *height, int *channels, int *bitsPerPixel)
 {
+  FeaturePtr feature;
+  VmbInt64_t value;
+  VmbPixelFormat_t pixFmt;
+
+  if ( VmbErrorSuccess == pSelectedCamera->GetFeatureByName( "Width", feature ) ) {
+    if ( VmbErrorSuccess == feature->GetValue( value ) ){
+      *width = (int)(value);
+    }
+    else{
+      std::cerr << "CamCtrlVmbAPI::getImageSize could not aquire image width" << std::endl;
+    }
+  }
+  if ( VmbErrorSuccess == pSelectedCamera->GetFeatureByName( "Height", feature ) ) {
+    if ( VmbErrorSuccess == feature->GetValue( value ) ){
+      *height = (int)(value);
+    }
+    else{
+      std::cerr << "CamCtrlVmbAPI::getImageSize could not aquire image width" << std::endl;
+    }
+  }
+
+  if ( VmbErrorSuccess == pSelectedCamera->GetFeatureByName( "PixelFormat", feature ) ) {
+    if ( VmbErrorSuccess != feature->GetValue( value ) ){
+      std::cerr << "CamCtrlVmbAPI::getImageSize could not aquire image width" << std::endl;
+    }
+  }
   
+  pixFmt = (VmbPixelFormat_t)(value);
+
+  switch (pixFmt){
+
+  case VmbPixelFormatMono8:
+    *channels = 1;
+    *bitsPerPixel = 8;
+    break;
+
+  case VmbPixelFormatMono10:
+    *channels = 1;
+    *bitsPerPixel = 10;
+    break;
+
+  case VmbPixelFormatMono12:
+    *channels = 1;
+    *bitsPerPixel = 12;
+    break;
+
+  case VmbPixelFormatMono12Packed:
+    *channels = 1;
+    *bitsPerPixel = 24; //OBS if 1 channel and 24 bits per pixel == packed 2x12 in 24 bits (3*8)
+    break;
+
+  case VmbPixelFormatMono14:
+    *channels = 1;
+    *bitsPerPixel = 14;
+    break;
+
+  case VmbPixelFormatMono16:
+    *channels = 1;
+    *bitsPerPixel = 16;
+    break;
+
+  default: 
+    std::cerr << "Unsupported pixel depth encountered (only gray scale cameras currently supported" << std::endl;
+    *channels = -1;
+    break;
+  }
+
+
 }
 
 
