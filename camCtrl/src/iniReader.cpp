@@ -65,11 +65,11 @@ namespace VisMe{
       pSet->cameraDirectoryPrefix = ini.gets( "Saving", "CameraDirectoryPrefix", "camera");
       std::string value;
       value = ini.gets( "Saving", "ImageDirectoryPrefix", "running");
-      if (strncmp(value, "datetime",5)==0)
+      if ( value == "datetime")
 	pSet->imageDirectoryPrefixType = DATETIME;
-      else if (strncmp(value, "running",5)==0)
+      else if ( value == "running" )
 	pSet->imageDirectoryPrefixType = RUNNING;
-      else if (strncmp(value, "none",4)==0)
+      else if ( value == "none")
 	pSet->imageDirectoryPrefixType = NONE;
       
       pSet->filenamePrefix = ini.gets( "Saving", "FilenamePrefix", "image%05d");
@@ -77,14 +77,12 @@ namespace VisMe{
 
       value = ini.gets( "Saving", "Compress", "NONE" );
 
-      if (strncmp(value, "none",3)==0)
-	pSet->compression = NONE;
-      else if (strncmp(value, "LZW",3)==0)
+      if ( value == "none" )
+	pSet->compression = NO;
+      else if ( value == "LZW" )
 	pSet->compression = LZW;
-      else if (strncmp(value, "GZIP",3)==0)
-	pSet->compression = GZIP;
-
-
+      else if ( value == "jpeg" )
+	pSet->compression = JPEG;
     }
 
 

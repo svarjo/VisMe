@@ -27,16 +27,14 @@ namespace VisMe{
 
   typedef struct s_experimentSettings{
 
-    int numberOfCameras;
     experimentMode_t mode;   
     double captureInterval;
-    bool showPreview;
     std::vector<cameraSettings_t> imageStack;
 
   }experimentSettings_t;
 
 
-  enum fileCompressionType_t{ NONE, LZW, GZIP };
+  enum fileCompressionType_t{ NO, LZW, JPEG };
 
   enum imageDirectoryPrefixType_t{ DATETIME, RUNNING, NONE };
 
@@ -45,7 +43,7 @@ namespace VisMe{
     std::string cameraDirectoryPrefix;
     imageDirectoryPrefixType_t imageDirectoryPrefixType;
     std::string filenamePrefix;
-    std::string filenameSuffx;
+    std::string filenameSuffix;
     fileCompressionType_t compression;
   }saveSettings_t;
 
