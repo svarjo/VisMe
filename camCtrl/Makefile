@@ -58,3 +58,8 @@ $(OBJ_DIR):
 
 $(BIN_DIR):
 	$(MKDIR) -p $(BIN_DIR)
+
+
+edit: 
+	emacs Makefile src/*.cpp include/*.h data/setup.ini &
+

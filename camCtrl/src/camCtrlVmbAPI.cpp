@@ -1,6 +1,5 @@
 //#include <sstream>
 #include <iostream>
-#include <ostream>
 #include <vector>
 
 #include "camCtrlVmbAPI.h"

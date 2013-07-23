@@ -19,10 +19,7 @@ std::string defaultSetupFileName = "setup.ini";
 
 int main(int argc, char** argv)
 { 
-  std::string setupFileName;
- 
-  CamCtrlVmbAPI *camCtrl = new CamCtrlVmbAPI();
-  
+  std::string setupFileName; 
   if (argc < 2) {
     setupFileName = defaultSetupFileName;
   } else {
@@ -31,6 +28,8 @@ int main(int argc, char** argv)
 
   Settings::saveSettings_t saveSettings;
   Settings::getSaveSettings( &saveSettings, setupFileName );
+
+  CamCtrlVmbAPI *camCtrl = new CamCtrlVmbAPI();
   
   delete camCtrl;
 }
