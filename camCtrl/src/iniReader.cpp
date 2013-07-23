@@ -37,10 +37,7 @@ namespace VisMe{
 	}
 
       }else{
-	if ( !S_ISDIR(st.st_mode) ){
-	  std::cout << "Given path [" << pSet->outPath <<"] exists as a file!\nTerminating..." << std::endl;
-	  exit(0);
-	}
+
 	if (mkdir(pSet->outPath.c_str(), S_IRWXU|S_IRWXG)!=0) {
 
 	  std::cout << "Error while creating [" << pSet->outPath <<"]" << std::endl;
@@ -61,7 +58,8 @@ namespace VisMe{
 	    std::cout << "\tParent directory is read only" << std::endl;
 	    break;
 	  }	
-	}
+	  exit(0);
+	}	
       }
 
     }
