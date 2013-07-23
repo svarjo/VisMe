@@ -1,20 +1,16 @@
 #ifndef INI_READER_H
 #define INI_READER_H
 
-#include "minIni.h"
+#include "settings.h"
 
 namespace VisMe{
 
-  class iniReader {
+  namespace Settings{
 
-  public:
-    iniReader(const std::string& p_filename);
-    ~iniReader();
+    void getSaveSettings(saveSettings_t *pSet, const std::string& p_filename);
+    void getExperimentSettings(experimentSettings_t *pSet, const std::string& p_filename);
 
-  private:
-    std::string filename;    
-  };
-
+  }
 }
 
 #endif //INI_READER_H

@@ -1,9 +1,20 @@
 #include "iniReader.h"
+#include "settings.h"
+#include "minIni.h"
+
+namespace VisMe{
+  namespace Settings{
+
+    void getSaveSettings(saveSettings_t *pSet, const std::string& p_filename)
+    {
+      minIni ini(p_filename);
+    }
 
 
-using namespace VisMe;
+    void getExperimentSettings(experimentSettings_t *pSet,const std::string& p_filename)
+    {
+      minIni ini(p_filename);
+    }
 
-
-iniReader::iniReader(const std::string& p_filename):filename(p_filename){ }
-iniReader::~iniReader(){ };
-
+  }//end namespace Settings
+}//end namespace VisMe

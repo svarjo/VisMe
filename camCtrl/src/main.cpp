@@ -10,20 +10,27 @@
  *
  *****************************************************************************************/
 
-
 #include "camCtrlVmbAPI.h"
 #include "iniReader.h"
 
-using namespace std;
 using namespace VisMe;
 
-const char *defaultSetupFile = "setup.ini";
+std::string defaultSetupFileName = "setup.ini";
 
 int main(int argc, char** argv)
-{  
+{ 
+  std::string setupFileName;
+ 
   CamCtrlVmbAPI *camCtrl = new CamCtrlVmbAPI();
+  
+  if (argc < 2) {
+    setupFileName = defaultSetupFileName;
+  } else {
+    setupFileName = std::string(argv[1]);
+  }
 
-  iniReader *iniIn = new iniReader(defaultSetupFile);
+  Settings::saveSettings_t saveSettings;
+  Settings::getSaveSettings( &saveSettings, setupFileName );
   
   delete camCtrl;
 }

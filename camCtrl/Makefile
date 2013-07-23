@@ -15,6 +15,7 @@ BIN_PATH            = $(BIN_DIR)/$(BIN_FILE)
 all: $(BIN_PATH)
 
 include $(MAKE_INCLUDE_DIR)/VimbaCPP.mk
+include $(MAKE_INCLUDE_DIR)/CopyData.mk
 
 SOURCE_DIR	 = $(PROJECT_DIR)/src
 INCLUDE_DIRS	 = -I$(PROJECT_DIR)/include 
@@ -32,9 +33,13 @@ OBJ_FILES	= $(OBJ_DIR)/main.o \
 		  $(OBJ_DIR)/minIni.o \
 		  $(OBJ_DIR)/iniReader.o
 
-DEPENDENCIES	= VimbaCPP
 
-SOURCES	= $(SRCDIR)/main.cpp $(SRCDIR)/camCtrl.cpp $(SRCDIR)/minIni.cpp $(SRCDIR)/iniReader.cpp
+DEPENDENCIES	= VimbaCPP CopySettings
+
+SOURCES	= 	$(SRCDIR)/main.cpp \
+		$(SRCDIR)/camCtrl.cpp\
+		$(SRCDIR)/minIni.cpp \
+		$(SRCDIR)/iniReader.cpp
 
 OBJECTS=$(OBJ_DIR)/$(SOURCES:.cpp.c=.o) 
 
