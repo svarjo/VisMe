@@ -91,22 +91,19 @@ namespace VisMe{
 	}
 
 	//Try to set as high precision Mono as possible
-	err = feature->SetValue( VmbPixelFormatMono16 );
+	err = feature->SetValue( VmbPixelFormatMono14 );
 	if (err != VmbErrorSuccess ){ 
-	  err = feature->SetValue( VmbPixelFormatMono14 );
+	  err = feature->SetValue( VmbPixelFormatMono12 );
 	  if (err != VmbErrorSuccess ){ 
-	    err = feature->SetValue( VmbPixelFormatMono12 );
+	    err = feature->SetValue( VmbPixelFormatMono10 );
 	    if (err != VmbErrorSuccess ){ 
-	      err = feature->SetValue( VmbPixelFormatMono10 );
+	      err = feature->SetValue( VmbPixelFormatMono8 );
 	      if (err != VmbErrorSuccess ){ 
-		err = feature->SetValue( VmbPixelFormatMono8 );
-		if (err != VmbErrorSuccess ){ 
-		  std::cerr << "Could not set camera pixel format to gray (mono8-mono16)" << std::endl;
-		} else{ std::cout << "\tgray 8 bpp camera set" << std::endl; }
-	      } else{ std::cout << "\tgray 10 bpp camera set" << std::endl; }
-	    } else{ std::cout << "\tgray 12 bpp camera set" << std::endl; }
-	  } else{ std::cout << "\tgray 14 bpp camera set" << std::endl; }
-	}else{ std::cout << "\tgray 16 bpp camera set" << std::endl; }
+		std::cerr << "Could not set camera pixel format to gray (mono8-mono16)" << std::endl;
+	      } else{ std::cout << "\tgray 8 bpp camera set" << std::endl; }
+	    } else{ std::cout << "\tgray 10 bpp camera set" << std::endl; }
+	  } else{ std::cout << "\tgray 12 bpp camera set" << std::endl; }
+	} else{ std::cout << "\tgray 14 bpp camera set" << std::endl; }
 
 	err = m_cameras[id]->GetFeatureByName( "PayloadSize", feature); //Required when aquiring frames
 	if (err != VmbErrorSuccess ){
@@ -300,16 +297,16 @@ void CamCtrlVmbAPI::captureImage( void )
 {
 
   //Define the capture buffer (frame)
-  FramePtr fP;
-  fP.reset( new Frame( m_payloadSize[ m_selectedCameraId ] ) );
-  err = pSelectedCamera->AnnounceFrame( fP );
+  FramePtr pFrame;
+  pFrame.reset( new Frame( m_payloadSize[ m_selectedCameraId ] ) );
+  err = pSelectedCamera->AnnounceFrame( pFrame );
   if (err != VmbErrorSuccess ){
     std::cerr << "CamCtrlVmbAPI::captureImage - could not AnnounceFrame for camera" << std::endl;
     return;
   }
 
   pSelectedCamera->StartCapture();
-  pSelectedCamera->QueueFrame( fP );
+  pSelectedCamera->QueueFrame( pFrame );
 
   FeaturePtr pF;
   err = pSelectedCamera->GetFeatureByName( "AcquisitionStart", pF );
@@ -324,8 +321,9 @@ void CamCtrlVmbAPI::captureImage( void )
     return;    
   }
 
-  
+  m_frames[m_selectedCameraId].push_back(pFrame);  
   std::cout << "captureImage Stub" << std::endl;
+
 }
 
 void CamCtrlVmbAPI::captureStream( void )
