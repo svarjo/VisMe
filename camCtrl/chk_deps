@@ -1,0 +1,32 @@
+#!/bin/bash
+
+# Check for dependencies and install if not found
+check_deps () {
+
+DEPS="libtiff4 libtiff4-dev"
+
+count=0
+for i in $DEPS ; do
+    dpkg-query -W -f='${Package}\n' | grep ^$i$ > /dev/null
+    if [ $? != 0 ] ; then
+        echo "Installing deps ..."
+        apt-get install $i -y
+	let count = count + 1
+    fi
+done  
+if [ $count -eq 0 ]; then
+  echo "Everything needed was found - nothing was installed"
+fi
+}
+
+# request for sudo
+user=$(whoami)
+if [ $user != root ]; then
+	echo "Please run this srcipt as root or using sudo"
+	exit
+fi
+
+# execute the check_deps function
+check_deps
+
+

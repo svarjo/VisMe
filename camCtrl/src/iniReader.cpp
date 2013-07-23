@@ -60,7 +60,30 @@ namespace VisMe{
 	  }	
 	  exit(0);
 	}	
-      }
+      }//end path creation
+      
+      pSet->cameraDirectoryPrefix = ini.gets( "Saving", "CameraDirectoryPrefix", "camera");
+      std::string value;
+      value = ini.gets( "Saving", "ImageDirectoryPrefix", "running");
+      if (strncmp(value, "datetime",5)==0)
+	pSet->imageDirectoryPrefixType = DATETIME;
+      else if (strncmp(value, "running",5)==0)
+	pSet->imageDirectoryPrefixType = RUNNING;
+      else if (strncmp(value, "none",4)==0)
+	pSet->imageDirectoryPrefixType = NONE;
+      
+      pSet->filenamePrefix = ini.gets( "Saving", "FilenamePrefix", "image%05d");
+      pSet->filenameSuffix = ini.gets( "Saving", "FilenameSuffix", ".tiff");
+
+      value = ini.gets( "Saving", "Compress", "NONE" );
+
+      if (strncmp(value, "none",3)==0)
+	pSet->compression = NONE;
+      else if (strncmp(value, "LZW",3)==0)
+	pSet->compression = LZW;
+      else if (strncmp(value, "GZIP",3)==0)
+	pSet->compression = GZIP;
+
 
     }
 

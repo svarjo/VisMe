@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <string>
+#include <cstdlib>
 
 namespace VisMe{
 
@@ -37,12 +38,14 @@ namespace VisMe{
 
   enum fileCompressionType_t{ NONE, LZW, GZIP };
 
+  enum imageDirectoryPrefixType_t{ DATETIME, RUNNING, NONE };
+
   typedef struct s_saveSettings{
     std::string outPath;
     std::string cameraDirectoryPrefix;
-    std::string imageDirectoryPrefix;
-    std::string FilenamePrefix;
-    std::string FilenameSuffx;
+    imageDirectoryPrefixType_t imageDirectoryPrefixType;
+    std::string filenamePrefix;
+    std::string filenameSuffx;
     fileCompressionType_t compression;
   }saveSettings_t;
 
