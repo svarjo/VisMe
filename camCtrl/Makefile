@@ -31,7 +31,8 @@ CFLAGS		= $(COMMON_CFLAGS) \
 OBJ_FILES	= $(OBJ_DIR)/main.o \
 		  $(OBJ_DIR)/camCtrlVmbAPI.o \
 		  $(OBJ_DIR)/minIni.o \
-		  $(OBJ_DIR)/iniReader.o
+		  $(OBJ_DIR)/iniReader.o\
+		  $(OBJ_DIR)/experiments.o
 
 
 DEPENDENCIES	= VimbaCPP CopySettings
@@ -39,7 +40,8 @@ DEPENDENCIES	= VimbaCPP CopySettings
 SOURCES	= 	$(SRCDIR)/main.cpp \
 		$(SRCDIR)/camCtrl.cpp\
 		$(SRCDIR)/minIni.cpp \
-		$(SRCDIR)/iniReader.cpp
+		$(SRCDIR)/iniReader.cpp\
+		$(SRCDIR)/experiments.cpp
 
 OBJECTS=$(OBJ_DIR)/$(SOURCES:.cpp.c=.o) 
 
@@ -63,3 +65,5 @@ $(BIN_DIR):
 edit: 
 	emacs Makefile src/*.cpp include/*.h data/setup.ini &
 
+wc:
+	wc -l src/*.cpp include/*.h data/setup.ini

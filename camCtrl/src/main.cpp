@@ -13,27 +13,77 @@
 
 #include "camCtrlVmbAPI.h"
 #include "iniReader.h"
+#include "settings.h"
+
+#include "experiments.h"   //Contain also the global variables for experiments
 
 using namespace VisMe;
+using namespace VisMe::Settings; 
 
-std::string defaultSetupFileName = "setup.ini";
+
+/********************************************************
+ * Signal handler for ctrl+c to quit cleanly 
+ ********************************************************/
+void signal_SIGINT_callback_handler(int signum)
+{
+   // Cleanup and close up stuff here
+   cleanExit("Caught CTRL+C - exiting");
+
+   // Terminate program
+   exit(signum);
+}
+
 
 int main(int argc, char** argv)
 { 
-  std::string setupFileName; 
-  if (argc < 2) {
-    setupFileName = defaultSetupFileName;
-  } else {
+
+  if (argc < 2) 
+    setupFileName = DEFAULT_SETUP_FILE_NAME;
+  else 
     setupFileName = std::string(argv[1]);
+  
+  ////////////////////////////////////
+  //Get the settings from the ini file
+  getSaveSettings( &saveSettings, setupFileName );
+  std::cout <<"Saving settings:\n\t"<< saveSettings.outPath << "\n\t" << saveSettings.cameraDirectoryPrefix <<
+    "\n\t" << saveSettings.filenamePrefix << "\n\t" << saveSettings.filenameSuffix << std::endl;
+  
+  getCameraIds(cameraIds, setupFileName);
+  std::cout << "Setting up " << cameraIds.size() << " camera(s):" << std::endl;
+  for (int i=0;i<cameraIds.size();i++){
+    std::cout << "\t" << cameraIds[i] << std::endl;
   }
 
-  Settings::saveSettings_t saveSettings;
-  Settings::getSaveSettings( &saveSettings, setupFileName );
+  getExperimentSettings( &experimentSettings, setupFileName);
 
-  std::cout <<"Found saving settings:\n\t"<< saveSettings.outPath << "\n\t" << saveSettings.cameraDirectoryPrefix <<
-    "\n\t" << saveSettings.filenamePrefix << "\n\t" << saveSettings.filenameSuffix << std::endl;
+  ///////////////////////////////////////////////////
+  //Initialize the Vimba camera controller and 
+  // open cameras by ID  (see also possible InitAll)
+  camCtrl = new CamCtrlVmbAPI();
+  int rval = camCtrl->InitByIds( cameraIds );
 
-  CamCtrlVmbAPI *camCtrl = new CamCtrlVmbAPI();
-  
-  delete camCtrl;
+  if (rval < 0){
+    std::cout << "Error while initializing cameras.\nExiting..." << std::endl;
+  }
+
+  else{
+    
+    switch (experimentSettings.mode) {
+   
+    case IMAGE_STACK_EXPTIME:
+      run_image_stack_capture();
+      break;
+   
+    case SINGLE:
+      run_single_capture();
+      break;
+
+    case STREAMING_VIEW:
+      run_streaming_view();
+      break;
+      
+    }
+  }
+ 
+  cleanExit("Done");
 }

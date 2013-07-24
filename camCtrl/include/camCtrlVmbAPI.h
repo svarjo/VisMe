@@ -10,8 +10,8 @@
  *
  */
 
-#ifndef VISME_CMACTRL_H
-#define VISME_CAMCTRL_H
+#ifndef VISME_CAMCTRL_VMBAPI_H
+#define VISME_CAMCTRL_VMBAPI_H
 
 #include <VimbaCPP/Include/VimbaCPP.h>
 
@@ -47,14 +47,18 @@ namespace VisMe{
    void setParameter( camParam_t parameter, void *value, int valueByteSize );
    void getImageSize( int *width, int *height, int *channels, int *bitsPerPixel );
 
+   int InitByIds( std::vector<std::string> IDlist );
+   void freeCameras( void );
 
-   //
-   int Init();
+   //Own interfaces
+   int InitAll(void);
 
   private:
 
-   int findCameras();
-   void freeCameras();
+   void initVimba(void);
+   void populateMyCameraVector(CameraPtrVector allCameras);
+   int  openGrayModeCameras(void);
+
 
    VimbaSystem &Vimba; //Note reference! 
 

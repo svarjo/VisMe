@@ -12,7 +12,7 @@ namespace VisMe{
   typedef struct s_cameraSettings{
 
     bool autogain;
-    bool autoexpsure;
+    bool autoexposure;
     bool autowhitebalance;
     bool autoiris;
 
@@ -23,12 +23,13 @@ namespace VisMe{
 
   }cameraSettings_t;
 
-  enum experimentMode_t{ IMAGE_STACK, SINGLE, STREAMING_VIEW };
+  enum experimentMode_t{ IMAGE_STACK_EXPTIME, SINGLE, STREAMING_VIEW, ADAPTIVE, EXTERNAL_SIGNAL};
 
   typedef struct s_experimentSettings{
 
     experimentMode_t mode;   
     double captureInterval;
+    bool preview;
     std::vector<cameraSettings_t> imageStack;
 
   }experimentSettings_t;

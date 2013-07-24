@@ -1,4 +1,4 @@
-//#include <sstream>
+#include <cstdlib>
 #include <iostream>
 #include <vector>
 
@@ -13,7 +13,9 @@ namespace VisMe{
 				   //OBS m_Vimba is reference to a Vimba system engine 
 				   //and must be initialized at the beginning of the constructor.
   {
-    Init();
+    //    Init();
+    m_payloadSize = NULL;
+    m_frames = NULL;
   }
 
   /********************************************************************
@@ -28,21 +30,19 @@ namespace VisMe{
     Vimba.Shutdown();
   }
 
-  /********************************************************************
-   * Do the initialization of the Vimba api engine and populate cameras
-   */
-  int CamCtrlVmbAPI::Init()
-  { 
+
+  void CamCtrlVmbAPI::initVimba(void)
+  {
     err = Vimba.Startup();
     if (err != VmbErrorSuccess ){
       std::cerr << "CamCtrlVmbAPI::Init : VIMBA sytem startup failed : "<< err << std::endl;
-      return -1;
+      exit(-1);
     }
 
     err = Vimba.QueryVersion( m_VimbaVersion );
     if (err != VmbErrorSuccess ){
       std::cerr << "CamCtrlVmbAPI::Init : version Query failed: " << err << std::endl;
-      return -2;
+      exit(-2);
     }
     std::cout << "Vimba " << m_VimbaVersion.major << "." << m_VimbaVersion.minor << " initialized" << std::endl;
 
@@ -52,19 +52,51 @@ namespace VisMe{
       
     if (err != VmbErrorSuccess){
       std::cerr << "CamCtrlVmbAPI::Init : CameraFactory not registered" << err << std::endl;
-      return -2;
+      exit(-3);
     }
     
-    findCameras();
+  }
+  
+
+  /********************************************************************
+   * Do the initialization of the Vimba api engine and populate cameras
+   */
+  int CamCtrlVmbAPI::InitAll(void)
+  { 
+    initVimba();    
+    
+    CameraPtrVector allCameras;
+    err = Vimba.GetCameras(allCameras);
+
+    if (err != VmbErrorSuccess){
+      std::cerr << "CamCtrlVmbAPI::findCameras : failed : " << err << std::endl;
+      return -3;
+    }
+   
+    populateMyCameraVector(allCameras);
 
     if (!m_cameras.empty()){
-      pSelectedCamera = m_cameras[0]; 
+      selectCamera(0);
     }
     else{
-      std::cout << "Not a single usable camera was found! Exiting..." << std::endl;
-      return 0;
+      std::cout << "Not a single suitable camera was found!" << std::endl;
+      return -1;
     }
     
+    int ok = openGrayModeCameras();
+
+    return ok;
+  }
+
+  /*********************************************************************************
+   * Open the cameras and set the pixel format to gray 14 bbp (or fall back to 12,10
+   * or 8 bits per pixel if not successful at 14 bbp)
+   * Also populate m_payloadSize[id] array containging the size of captured frame for
+   * each camera in m_cameras vector. In addition FramePtrVector array is created for 
+   * cameras at m_frames[id] 
+   */
+  int CamCtrlVmbAPI::openGrayModeCameras(void)
+  {
     m_payloadSize = new VmbInt64_t[m_cameras.size()];
     
     // Initialize (all) the found cameras
@@ -114,24 +146,15 @@ namespace VisMe{
       }
 
     m_frames = new FramePtrVector[m_cameras.size()];
-
+    return 0;
   }
 
-
   /********************************************************************
-   * Use the Vimba API system to find all the cameras and populate the
-   * m_cameras vector with GigE and USB cameras
+   * Go through the camera vector containing N cameras and populate
+   * m_cameras vector with GigE and USB cameras. Open them and set the
+   * initial mode to 
    */
-  int CamCtrlVmbAPI::findCameras()
-  {
-
-    CameraPtrVector allCameras;
-    err = Vimba.GetCameras(allCameras);
-
-    if (err != VmbErrorSuccess){
-      std::cerr << "CamCtrlVmbAPI::findCameras : failed : " << err << std::endl;
-      return -3;
-    }
+  void CamCtrlVmbAPI:: populateMyCameraVector(CameraPtrVector allCameras){
 
     VmbInterfaceType interfaceType;
 
@@ -141,8 +164,8 @@ namespace VisMe{
     std::string strSerialNumber;
     std::string strInterfaceID;
     std::string strInfo;
-   
-    for ( CameraPtrVector::const_iterator iter = m_cameras.begin(); m_cameras.end() != iter; ++iter){
+
+    for ( CameraPtrVector::const_iterator iter = allCameras.begin(); allCameras.end() != iter; ++iter){
 
       err = (*iter)->GetID( strID );
       if ( VmbErrorSuccess != err )
@@ -211,14 +234,10 @@ namespace VisMe{
 	    }
 	}
                     
-      std::cout << "/// Camera Name: " << strName <<	\
-	std::endl << "/// Custom Info: " << strInfo << \
-	std::endl << std::endl;
-	
 
-      std::cout << "/// Camera Name: " << strName << \
-	std::endl << "/// Model Name: " << strModelname << \
-	std::endl << "/// Camera ID: " << strID << \
+      std::cout << "/// Camera Name: " << strName <<	   \
+	std::endl << "/// Model Name: " << strModelname <<	 \
+	std::endl << "/// Camera ID: " << strID <<		 \
 	std::endl << "/// Serial Number: " << strSerialNumber << \
 	std::endl << "/// @ Interface ID: " << strInterfaceID << \
 	std::endl << std::endl;
@@ -227,27 +246,77 @@ namespace VisMe{
 
     }
 
-    std::cout << "Found " << m_cameras.size() << " AVT Vimba camera(s) " << std::endl;
+    std::cout << "\nFound " << m_cameras.size() << " AVT Vimba camera(s) " << std::endl;
+    }
+
+
+  /*********************************************************************************
+   * Use a list (std::vector<std::string>) of camera ids to initialize cameras
+   */
+  int CamCtrlVmbAPI::InitByIds( std::vector<std::string> IDlist )
+  {
+
+    initVimba();
+
+    CameraPtrVector idCameras;
+
+    for (int i=0; i<IDlist.size();i++){
+
+      CameraPtr pCamera;
+      err=Vimba.OpenCameraByID(IDlist[i].c_str(), VmbAccessModeFull, pCamera);
+
+      if (err != VmbErrorSuccess){
+	std::cout << "Error while opening camera: " << IDlist[i] ;
+	if (err == VmbErrorNotFound){
+	  std::cout << " -camera not found (check the ID in setup file) " << std::endl;	
+	}
+	else{
+	  std::cout << " -VmbStartup not done or unknown error encountered! code:" << err << std::endl;
+	}
+	continue;
+      }
+      idCameras.push_back(pCamera);
+    }
+
+    populateMyCameraVector(idCameras);
+
+    if (!m_cameras.empty()){
+      selectCamera(0);
+    }
+    else{
+      std::cout << "Not a single suitable camera was found!" << std::endl;
+      return -1;
+    }
+    
+    int ok = openGrayModeCameras();
+
+    return ok;
   }
 
 
+
   /********************************************************************
-   *
+   *  Close the cameras and free resources for clean exit 
    */
   void CamCtrlVmbAPI::freeCameras()
   {
 
     if (!m_cameras.empty()){
-      m_cameras.clear();
+
+      m_cameras.clear(); //Camera destructor implicitly closes the camera beforehand
+
     }
 
-    delete m_payloadSize;
-    delete m_frames;
+    if (m_payloadSize != NULL)
+      delete m_payloadSize;
+
+    if (m_frames != NULL)
+      delete m_frames;
 
   }
 
 
-  /*
+  /*************************************************************************
    * Select the active camera by string descriptor (unique for each camera)
    */
   void CamCtrlVmbAPI::selectCamera( const char *pStrId )

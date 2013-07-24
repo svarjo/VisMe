@@ -12,15 +12,50 @@ namespace VisMe{
       EXP_TIME_VALUE, APERTURE_VALUE, GAIN_VALUE, WHITEBALANCE_VALUE,
       EXP_TIME_AUTO, APERTURE_AUTO, GAIN_AUTO, WHITEBALANCE_AUTO
     };
- 
+
+    /*
+     * Find the cameras using ID string, open them and init for usage
+     */
+    virtual int InitByIds( std::vector<std::string> IDlist ) = 0;  
+    
+    /*
+     * Select camera that is controlled by index of populated list
+     */
     virtual void selectCamera( int id ) = 0;
 
+    /*
+     * Select camera that is controlled by camera specific identifier string (eg IP or serial number)
+     */
+    virtual void selectCamera( const char *pStrId ) = 0;
+
+    /*
+     * Capture a single image 
+     */
     virtual void captureImage( void ) = 0;
+
+    /*
+     * Capture a stream
+     */
     virtual void captureStream( void ) = 0;
 
+    /*
+     * Set a camera parameter for selected camera
+     */
     virtual void setParameter( camParam_t parameter, void *value, int valueSize) = 0;
+
+    
+    /*
+     * Get the image dimensions that the selected camera provides (generally is not the same
+     * as the frame size from IP camera).
+     */
     virtual void getImageSize( int *width, int *height, int *channels, int *bitsPerPixel)=0;
 
+
+    /*
+     * Release the resources used by the cameras and close the cameras for clean exit
+     */
+    virtual void freeCameras()=0;
+ 
   };
 
 }//End namespace VisMe
