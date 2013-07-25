@@ -43,6 +43,7 @@ namespace VisMe{
     std::string outPath;
     std::string cameraDirectoryPrefix;
     imageDirectoryPrefixType_t imageDirectoryPrefixType;
+    std::string imageDirectoryPrefix;
     std::string filenamePrefix;
     std::string filenameSuffix;
     fileCompressionType_t compression;

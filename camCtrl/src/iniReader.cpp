@@ -6,6 +6,8 @@
 #include <sys/stat.h>
 #include <errno.h>
 
+#include "fileIO.h"
+
 #include "iniReader.h"
 #include "settings.h"
 #include "minIni.h"
@@ -16,24 +18,12 @@ const char* INI_DELIMITERS = " ,.|";
 namespace VisMe{
   namespace Settings{
 
-    bool parameterFileExists(const std::string &filename)
-    {      
-      struct stat st;
-      int statOK = stat( filename.c_str(),&st);
-      if (statOK != 0 ){
-	std::cout << "Parameter file [" << filename << "] was not found." << std::endl;
-	return false;
-      }
-      if (S_ISDIR(st.st_mode)){
-	std::cout << "Given paremeter file is directory!" << std::endl;
-	return false;
-      }
-      return true;
-    }
-
+    /******************************************************************************
+     * populate camera idStrings from ini file
+     */
     void getCameraIds(std::vector<std::string> &idStrings, const std::string & p_filename)
     {
-      if (!parameterFileExists(p_filename)){
+      if (!FileIO::parameterFileExists(p_filename)){
 	exit(-1);
       }      
       minIni ini(p_filename);
@@ -55,11 +45,13 @@ namespace VisMe{
 
     }
 
-
+    /*********************************************************************************
+     * populate save settings structure from ini-file
+     */
     void getSaveSettings(saveSettings_t *pSet, const std::string& p_filename)
     {
 
-      if (!parameterFileExists(p_filename)){
+      if (!FileIO::parameterFileExists(p_filename)){
 	exit(-1);
       }
 
@@ -68,57 +60,34 @@ namespace VisMe{
       //Get the path, test if it exist or not and if not create a one
       pSet->outPath = ini.gets( "Saving", "Path", "./data");
 
-      struct stat st;
-      int statOK;
-      statOK = stat( pSet->outPath.c_str(), &st) ;
-      if (statOK == 0 && S_ISDIR(st.st_mode) ) {
-	
+      //Try to make the outPath
+      int rval = FileIO::makeDirectory( pSet->outPath.c_str(), false, true);
+      if (rval == -2){
 	std::cout << "Output path [" << pSet->outPath <<
-	  "] already exist!\n\tDo you really want to overwrite? y/N" << std::endl;
-
-	char key;
-	key = getchar();
+	  "] already exist!\n\tAre you sure to use old path? y/N" << std::endl;
+	char key = getchar();
 	if (key=='y' || key == 'Y' ){
-	  std::cout << "Overwriting files with similar names" << std::endl;	  
+	  std::cout << "Using existing output directory" << std::endl;	  
 	}
 	else{
 	  std::cout << "Terminating..." << std::endl;
 	  exit(0);
 	}
+      }
+      else if (rval < 0 ){
+	exit(rval);
+      }
 
-      }else{
-
-	if (mkdir(pSet->outPath.c_str(), S_IRWXU|S_IRWXG)!=0) {
-
-	  std::cout << "Error while creating [" << pSet->outPath <<"]" << std::endl;
-	  switch (errno){
-	  case EACCES:
-	    std::cout << "\tNo write permission" << std::endl;
-	    break;
-	  case EEXIST:
-	    std::cout << "\tFile already exist" << std::endl;
-	    break;
-	  case EMLINK:
-	    std::cout << "\tParent has too many entries" << std::endl;
-	    break;
-	  case ENOSPC:
-	    std::cout << "\tFile system space limit reached" << std::endl;
-	    break;
-	  case EROFS:
-	    std::cout << "\tParent directory is read only" << std::endl;
-	    break;
-	  }	
-	  exit(0);
-	}	
-      }//end path creation
-      
       pSet->cameraDirectoryPrefix = ini.gets( "Saving", "CameraDirectoryPrefix", "camera");
+
       std::string value;
-      value = ini.gets( "Saving", "ImageDirectoryPrefix", "running");
+      value = ini.gets( "Saving", "ImageDirectoryPrefixType", "running");
       if ( value == "datetime")
 	pSet->imageDirectoryPrefixType = DATETIME;
-      else if ( value == "running" )
+      else if ( value == "running" ){
 	pSet->imageDirectoryPrefixType = RUNNING;
+	pSet->imageDirectoryPrefix = ini.gets( "Saving", "ImageDirectoryPrefix", "ImgSet%05d");
+      }
       else if ( value == "none")
 	pSet->imageDirectoryPrefixType = NONE;
       
@@ -137,9 +106,12 @@ namespace VisMe{
     }//end void getSaveSettings(saveSettings_t *pSet, const std::string& p_filename)
 
 
+    /*********************************************************************************
+     * populate experiment settings structure from ini-file
+     */
     void getExperimentSettings(experimentSettings_t *pSet,const std::string& p_filename)
     {
-      if (!parameterFileExists(p_filename)){
+      if (!FileIO::parameterFileExists(p_filename)){
 	exit(-1);
       }
       minIni ini(p_filename);
@@ -147,23 +119,38 @@ namespace VisMe{
       std::string value;
       value = ini.gets("Interface","Mode", "unknown");
 
-      if (value == "ImageStackExpTime")
+      if (value == "ImageStackExpTime"){
 	pSet->mode = IMAGE_STACK_EXPTIME;
-      else if (value == "single")
+      }
+      else if (value == "single"){
 	pSet->mode = SINGLE;
-      else if (value == "streaming_view")
+      }
+      else if (value == "streaming_view"){
 	pSet->mode = STREAMING_VIEW;
-      else if (value == "adaptive")
+      }
+      else if (value == "adaptive"){
 	pSet->mode = ADAPTIVE;
-      else if (value == "externalSignal")
+      }
+      else if (value == "externalSignal"){
 	pSet->mode = EXTERNAL_SIGNAL;
+      }
       else{
 	std::cout << "Unsupported mode encountered : " << value << "\nExiting..." <<  std::endl ;
 	exit(-1);
       }
+      std::cout << "\nUsing mode: " << value << std::endl;
 
+      ////////////////////////////////////////////////////
+      // Get first the common settings for all modes and
+      // make a "initial" struct for all experiments
       pSet->preview = ini.getbool( "Interface", "ShowPreview", false);
-      
+      pSet->captureInterval = ini.geti( "Interface", "CaptureInterval", -1 );
+      if (pSet->captureInterval < 0){
+	std::cout << "[Interface] CaptureInterval is not defined.\nExitting..." << std::endl;
+	exit(-1);
+      }
+      std::cout << "Capturing images every: " << pSet->captureInterval   << " second" << std::endl;
+
       cameraSettings_t camBaseSettings;
       camBaseSettings.autogain         = ini.getbool( "Sensor", "AutoGain", false);
       camBaseSettings.autoexposure     = ini.getbool( "Sensor", "AutoExposure", false);
@@ -175,36 +162,57 @@ namespace VisMe{
       camBaseSettings.exposureTime = ini.getf( "Sensor", "ExposureTime", 1.0);
       camBaseSettings.iris         = ini.getf( "Iris", "Value", 1.0);
  
-      int Nimages;
+      /////////////////////////////////////////////
+      // Handle each experiment mode and generate 
+      // suitable camera parameter sets 
       switch(pSet->mode){
       case IMAGE_STACK_EXPTIME:
 	{
-	  Nimages = ini.geti( "ImageStackExpTime", "NumberOfImages", 1 );
-	  value = ini.gets( "ImageStackExpTime", "ExposureTimes", "250");		
+	  int Nimages = ini.geti( "ImageStackExpTime", "NumberOfImages", 1 );
+	  value = ini.gets( "ImageStackExpTime", "ExposureTimes", "250");
+	  std::cout << "\tStack of " << Nimages << " images" << std::endl;
 	  
-	  char *charValues = (char*)( value.c_str() );
-
+	  char buffer[1024];	  
+	  char *charValues = strncpy(buffer,  value.c_str(), 1023 );
+	  buffer[1023]=0;
 	  char *p;
 	  p = strtok(charValues, INI_DELIMITERS);
-	  double exptimes[Nimages];
+	  std::cout << "\tExposure times: " ;
+	  double exptime;
 	  for (int imageId = 0; imageId < Nimages; imageId++){
 	    if (p==NULL){
-	      std::cout << "Unexpcted end of ExporureTimes string in [ImageStackExpTime]" << std::endl;
+	      std::cout << "Unexpcted end of ExposureTimes string in [ImageStackExpTime]" << std::endl;
 	      exit(-1);
 	    }
-	    exptimes[imageId] = atof(p);
+	    exptime = atof(p);
 	    p=strtok(NULL, INI_DELIMITERS);
+	    std::cout << exptime << "ms ";
+
+	    cameraSettings_t frameSetting;
+	    frameSetting = camBaseSettings;
+
+	    frameSetting.exposureTime = exptime;
+	    pSet->imageStack.push_back(frameSetting);
+
 	  }
-	  delete charValues;
+	  std::cout << std::endl << std::endl;
 	}
 	break;
 
       default:
-	Nimages = 1;
+	pSet->imageStack.push_back(camBaseSettings);
+	std::cout << "\tSingle image capture" << std::endl;
+
 	break;
       }
+      
+      std::cout <<"\tautogain = " << camBaseSettings.autogain << " | gain=" << camBaseSettings.gain << std::endl;
+      std::cout <<"\tautoexposure = " << camBaseSettings.autoexposure << " | expTime=" << camBaseSettings.exposureTime << std::endl;
+      std::cout <<"\tautowhitebalance = " << camBaseSettings.autowhitebalance << std::endl;
+      std::cout <<"\tautoiris = " << camBaseSettings.autoiris << " | value=" << camBaseSettings.iris << std::endl;
+      std::cout <<"\tgamma val = " << camBaseSettings.gamma << std::endl << std::endl; 
 
-	
+      	
 
     }
 

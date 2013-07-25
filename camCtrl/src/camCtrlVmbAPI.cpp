@@ -42,9 +42,11 @@ namespace VisMe{
     err = Vimba.QueryVersion( m_VimbaVersion );
     if (err != VmbErrorSuccess ){
       std::cerr << "CamCtrlVmbAPI::Init : version Query failed: " << err << std::endl;
+      Vimba.Shutdown();
       exit(-2);
     }
-    std::cout << "Vimba " << m_VimbaVersion.major << "." << m_VimbaVersion.minor << " initialized" << std::endl;
+    std::cout << "Vimba " << m_VimbaVersion.major << "." << m_VimbaVersion.minor 
+	      << " initialized" << std::endl  << std::endl;
 
     //Set the camera object creator
     ICameraFactoryPtr factPtr = UserCameraFactory_t(new UserCameraFactory());
@@ -52,6 +54,7 @@ namespace VisMe{
       
     if (err != VmbErrorSuccess){
       std::cerr << "CamCtrlVmbAPI::Init : CameraFactory not registered" << err << std::endl;
+      Vimba.Shutdown();
       exit(-3);
     }
     
@@ -69,7 +72,7 @@ namespace VisMe{
     err = Vimba.GetCameras(allCameras);
 
     if (err != VmbErrorSuccess){
-      std::cerr << "CamCtrlVmbAPI::findCameras : failed : " << err << std::endl;
+      std::cerr << "CamCtrlVmbAPI::findCameras : failed : " << err << std::endl;      
       return -3;
     }
    
@@ -287,7 +290,7 @@ namespace VisMe{
       std::cout << "Not a single suitable camera was found!" << std::endl;
       return -1;
     }
-    
+        
     int ok = openGrayModeCameras();
 
     return ok;

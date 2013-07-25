@@ -27,9 +27,7 @@ using namespace VisMe::Settings;
 void signal_SIGINT_callback_handler(int signum)
 {
    // Cleanup and close up stuff here
-   cleanExit("Caught CTRL+C - exiting");
-
-   // Terminate program
+   cleanExit("Caught CTRL+C - exiting...");
    exit(signum);
 }
 
@@ -49,7 +47,7 @@ int main(int argc, char** argv)
     "\n\t" << saveSettings.filenamePrefix << "\n\t" << saveSettings.filenameSuffix << std::endl;
   
   getCameraIds(cameraIds, setupFileName);
-  std::cout << "Setting up " << cameraIds.size() << " camera(s):" << std::endl;
+  std::cout << "\nSetting up " << cameraIds.size() << " camera(s):" << std::endl;
   for (int i=0;i<cameraIds.size();i++){
     std::cout << "\t" << cameraIds[i] << std::endl;
   }
@@ -61,6 +59,10 @@ int main(int argc, char** argv)
   // open cameras by ID  (see also possible InitAll)
   camCtrl = new CamCtrlVmbAPI();
   int rval = camCtrl->InitByIds( cameraIds );
+
+  //make a data directory for each camera
+  for (int i = 0; i<cameraIds.size(); i++)
+    generateCamDir(i+1);
 
   if (rval < 0){
     std::cout << "Error while initializing cameras.\nExiting..." << std::endl;
