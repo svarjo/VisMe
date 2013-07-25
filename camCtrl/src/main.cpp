@@ -87,7 +87,7 @@ int main(int argc, char** argv)
     case IMAGE_STACK_EXPTIME:
       run_image_stack_capture();
       
-      run_debug_filenames();
+      //run_debug_filenames(); OK
 
       break;
    
