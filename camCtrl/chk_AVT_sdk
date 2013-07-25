@@ -1,0 +1,38 @@
+#!/bin/bash
+
+VimbaSDKURL=http://www.alliedvisiontec.com/fileadmin/content/PDF/Software/AVT_software/zip_files/VIMBA/AVTVimbaSDK_v1.2.tgz
+
+# request for normal user
+user=$(whoami)
+if [ $user == root ]; then
+	echo "Please run this srcipt as reqular user"
+	exit
+fi
+
+# check if the Vimba is found in expected location (relative to this script)
+if [ ! -d AVT_sdk/Vimba_1_2 -o ! -f 'AVT_sdk/Vimba_1_2/VimbaCPP/Include/VimbaCPP.h' ]; then
+  echo "AVT Vimba sdk was not found from the default location [ ./AVT_sdk/Vimba_1_2/ ]"
+  echo "Please link your sdk to to default location or correct the location to the Makefile."
+  echo " "
+  echo "Optionally you can fetch the package from http://www.alliedvisiontech.com/"
+  echo "Would you like to fetch and uncompress the package now (y/N)?"
+
+  read -n1 key
+  key=${key:-n}
+
+  if [ $key == 'y' -o $key == 'Y' ]; then
+
+	if [ ! -d AVT_sdk ]; then
+	  mkdir AVT_sdk
+	fi	
+
+	cd AVT_sdk
+	echo "attempt to wget"
+	wget $VimbaSDKURL
+	tar xvzf AVTVimbaSDK_v1.2.tgz 
+	cd ..		
+  fi
+
+else
+  echo "Vimba SDK found in the default location" 
+fi
