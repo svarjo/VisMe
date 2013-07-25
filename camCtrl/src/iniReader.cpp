@@ -86,7 +86,7 @@ namespace VisMe{
 	pSet->imageDirectoryPrefixType = DATETIME;
       else if ( value == "running" ){
 	pSet->imageDirectoryPrefixType = RUNNING;
-	pSet->imageDirectoryPrefix = ini.gets( "Saving", "ImageDirectoryPrefix", "ImgSet%05d");
+	pSet->imageDirectoryPrefix = ini.gets( "Saving", "ImageDirectoryPrefix", "ImgSet");
       }
       else if ( value == "none")
 	pSet->imageDirectoryPrefixType = NONE;

@@ -8,7 +8,10 @@ namespace FileIO{
   const int DIR_EXISTS = -2;
   const int DIR_ERROR  = -1;
 
+
   int makeDirectory( const char *path, bool terminateOnError = true, bool verbose = true);
+  bool dirExist( char *path );
+  bool fileExist( char *path );
   bool parameterFileExists(const std::string &filename);
 
 

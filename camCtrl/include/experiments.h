@@ -24,6 +24,7 @@ namespace VisMe
  extern CamCtrlVmbAPI *camCtrl;
  extern std::string setupFileName; 
 
+ extern bool running;
  // extern char outputFileName[1024];
 
  //Misc shared variables required by the experiment settings (ok one could/should make a class of parameters, extend it for each experiment - but...)
@@ -35,10 +36,13 @@ namespace VisMe
   void run_streaming_view();
 
   bool generateCamDir(int idx);
-  bool generateImageDir(int camId);
-  char* generateImageName();
+  char* generateImageDir(int camId);
+  char* generateImageName(char *path, int *p_lastIndex = NULL);
 
   void cleanExit(std::string msg);
+
+  //############################
+  void run_debug_filenames();
 }
 
 

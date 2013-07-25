@@ -10,6 +10,7 @@
  *
  *****************************************************************************************/
 #include <iostream>
+#include <signal.h>
 
 #include "camCtrlVmbAPI.h"
 #include "iniReader.h"
@@ -20,6 +21,7 @@
 using namespace VisMe;
 using namespace VisMe::Settings; 
 
+#define DEBUG 1
 
 /********************************************************
  * Signal handler for ctrl+c to quit cleanly 
@@ -27,13 +29,19 @@ using namespace VisMe::Settings;
 void signal_SIGINT_callback_handler(int signum)
 {
    // Cleanup and close up stuff here
-   cleanExit("Caught CTRL+C - exiting...");
+   cleanExit("\nCaught CTRL+C - exiting...\n");
    exit(signum);
 }
 
 
 int main(int argc, char** argv)
 { 
+
+  ///////////////////////////////////////////////////
+  // Register signal handler for ctrl+c (clean exit)
+  ///////////////////////////////////////////////////
+  signal(SIGINT, signal_SIGINT_callback_handler); 
+	
 
   if (argc < 2) 
     setupFileName = DEFAULT_SETUP_FILE_NAME;
@@ -58,22 +66,29 @@ int main(int argc, char** argv)
   //Initialize the Vimba camera controller and 
   // open cameras by ID  (see also possible InitAll)
   camCtrl = new CamCtrlVmbAPI();
-  int rval = camCtrl->InitByIds( cameraIds );
+  int init_rval = camCtrl->InitByIds( cameraIds );
 
+  //////////////////////////////////////////////////
   //make a data directory for each camera
   for (int i = 0; i<cameraIds.size(); i++)
     generateCamDir(i+1);
 
-  if (rval < 0){
+#ifdef DEBUG    
+  init_rval = 0;
+#endif
+
+  if (init_rval < 0){
     std::cout << "Error while initializing cameras.\nExiting..." << std::endl;
   }
-
   else{
     
     switch (experimentSettings.mode) {
    
     case IMAGE_STACK_EXPTIME:
       run_image_stack_capture();
+      
+      run_debug_filenames();
+
       break;
    
     case SINGLE:

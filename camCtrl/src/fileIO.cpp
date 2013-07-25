@@ -73,4 +73,31 @@ namespace FileIO
     }
     return true;
   }//end parameterFileExists
+
+
+  /******************************************************************************
+   * check if the path exist
+   */
+  bool dirExist( char *path )
+  {
+    struct stat st;
+    int statOK = stat( path ,&st);
+    if (statOK != 0 || !S_ISDIR(st.st_mode) )
+      return false;
+    else 
+      return true;
+  }
+
+  bool fileExist( char *path )
+  {
+    struct stat st;
+    int statOK = stat( path,&st);
+    if (statOK != 0 || !S_ISREG(st.st_mode) )
+      return false;
+    else 
+      return true;
+  }
+
+  
+
 }
