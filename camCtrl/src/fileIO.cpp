@@ -87,7 +87,9 @@ namespace FileIO
     else 
       return true;
   }
-
+  /******************************************************************************
+   * Check if reqular file exist
+   */
   bool fileExist( char *path )
   {
     struct stat st;
@@ -98,6 +100,9 @@ namespace FileIO
       return true;
   }
 
-  
+  /******************************************************************************
+   * 
+   */
+
 
 }

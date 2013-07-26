@@ -23,7 +23,9 @@ INCLUDE_DIRS	 = -I$(PROJECT_DIR)/include
 #CFLAGS		+= $(shell pkg-config opencv --cflags)
 #LIBS 		+= $(shell pkg-config opencv --libs)
 
-LIBS		= $(VIMBACPP_LIBS)
+LIBS 		+= -ltiff
+LIBS		+= $(VIMBACPP_LIBS) 
+
 DEFINES		=
 CFLAGS		= $(COMMON_CFLAGS) \
 		  $(VIMBACPP_CFLAGS)
@@ -33,7 +35,8 @@ OBJ_FILES	= $(OBJ_DIR)/main.o \
 		  $(OBJ_DIR)/minIni.o \
 		  $(OBJ_DIR)/iniReader.o\
 		  $(OBJ_DIR)/experiments.o\
-		  $(OBJ_DIR)/fileIO.o
+		  $(OBJ_DIR)/fileIO.o\
+		  $(OBJ_DIR)/commonImage.o
 
 
 DEPENDENCIES	= VimbaCPP CopySettings
@@ -43,9 +46,10 @@ SOURCES	= 	$(SRCDIR)/main.cpp \
 		$(SRCDIR)/minIni.cpp \
 		$(SRCDIR)/iniReader.cpp\
 		$(SRCDIR)/experiments.cpp\
-		$(SRCDIR)/fileIO.cpp
+		$(SRCDIR)/fileIO.cpp\
+		$(SRCDIR)/commonImage.cpp
 
-OBJECTS=$(OBJ_DIR)/$(SOURCES:.cpp.c=.o) 
+#OBJECTS=$(OBJ_DIR)/$(SOURCES:.cpp.c=.o) 
 
 $(OBJ_DIR)/%.o: $(SOURCE_DIR)/%.cpp $(OBJ_DIR) 
 	$(CXX) -c $(INCLUDE_DIRS) $(DEFINES) $(CFLAGS) -m$(WORDSIZE) -o $@ $<

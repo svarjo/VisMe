@@ -6,6 +6,7 @@
 #include "settings.h"
 #include "experiments.h"
 #include "fileIO.h"
+#include "commonImage.h"
 
 namespace VisMe{
 
@@ -17,7 +18,7 @@ namespace VisMe{
   Settings::saveSettings_t saveSettings;
   Settings::experimentSettings_t experimentSettings;
   std::vector<std::string> cameraIds;
-  std::string setupFileName; 
+  std::string setupFileName="undefined";
 
   CamCtrlVmbAPI *camCtrl = NULL;   //The camera controller
 
@@ -251,6 +252,48 @@ namespace VisMe{
     }//end while 1
   }
  
+  void run_test_tiff_saving()
+  {
+    short data[100][100];
+    for (int i=0;i<100;i++)
+      for (int j=0;j<100;j++)
+	data[i][j]=i*i;
+
+    commonImage::commonImage_t image;
+    image.width = 100;
+    image.height = 100;
+    image.mode = commonImage::Gray14bpp;
+    image.data = (void*)(data);
+
+    std::string path = "./debug100x100.tiff";
+    commonImage::saveTIFF(path.c_str(), &image, commonImage::COMPRESSION_NONE, true);
+    
+    
+  }
+
+  void run_test_tiff_load()
+  {
+    commonImage::commonImage_t image;
+
+    std::string fileIn = "./debug100x100.tiff";
+    commonImage::readTIFF( fileIn.c_str(), &image );
+
+    if (! image.data )
+      std::cout << "Error loading image: " << fileIn << std::endl;
+    else{
+
+      short *pData = (short*)(image.data);
+      int count = image.height * image.width;
+      while (count-- > 0)
+	  *pData = 65535-*pData++;
+      
+      commonImage::saveTIFF( "./debug100x100_load_invert_test.tiff", &image );
+
+    }
+
+    
+
+  }
 
   //END FEEL FREE TO CLEAN UP
   //########################################

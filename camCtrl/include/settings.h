@@ -23,10 +23,11 @@ namespace VisMe{
 
   }cameraSettings_t;
 
-  enum experimentMode_t{ IMAGE_STACK_EXPTIME, SINGLE, STREAMING_VIEW, ADAPTIVE, EXTERNAL_SIGNAL};
+  enum experimentMode_t{ IMAGE_STACK_EXPTIME, SINGLE, STREAMING_VIEW, ADAPTIVE, EXTERNAL_SIGNAL, DEBUG_TESTING};
 
   typedef struct s_experimentSettings{
-
+    
+    int id;
     experimentMode_t mode;   
     double captureInterval;
     bool preview;

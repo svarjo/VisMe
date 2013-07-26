@@ -2,11 +2,13 @@
 #define INI_READER_H
 
 #include <vector>
+#include <string>
 #include "settings.h"
 
 namespace VisMe{
 
   namespace Settings{
+    extern const std::string SETUP_FILE_SUFFIX;
 
     void getCameraIds(std::vector<std::string> &idStrings, const std::string & p_filename);
     void getSaveSettings(saveSettings_t *pSet, const std::string& p_filename);

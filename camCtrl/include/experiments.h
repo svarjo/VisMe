@@ -42,7 +42,11 @@ namespace VisMe
   void cleanExit(std::string msg);
 
   //############################
+  //TESTING (TODO CLEAN UP)
   void run_debug_filenames();
+  void run_test_tiff_saving();
+  void run_test_tiff_load();
+
 }
 
 

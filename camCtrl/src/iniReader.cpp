@@ -18,6 +18,8 @@ const char* INI_DELIMITERS = " ,.|";
 namespace VisMe{
   namespace Settings{
 
+    const std::string SETUP_FILE_SUFFIX = ".ini";
+
     /******************************************************************************
      * populate camera idStrings from ini file
      */
@@ -116,6 +118,8 @@ namespace VisMe{
       }
       minIni ini(p_filename);
 
+      pSet->id = 0;
+
       std::string value;
       value = ini.gets("Interface","Mode", "unknown");
 
@@ -134,6 +138,10 @@ namespace VisMe{
       else if (value == "externalSignal"){
 	pSet->mode = EXTERNAL_SIGNAL;
       }
+      else if (value == "debug" || value == "test"){
+	pSet->mode = DEBUG_TESTING;
+	pSet->id = ini.geti( "test", "id", 0 );
+	}
       else{
 	std::cout << "Unsupported mode encountered : " << value << "\nExiting..." <<  std::endl ;
 	exit(-1);

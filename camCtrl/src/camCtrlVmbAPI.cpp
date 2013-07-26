@@ -3,6 +3,7 @@
 #include <vector>
 
 #include "camCtrlVmbAPI.h"
+#include "experiments.h"
 
 namespace VisMe{
   
@@ -79,12 +80,19 @@ namespace VisMe{
     populateMyCameraVector(allCameras);
 
     if (!m_cameras.empty()){
-      selectCamera(0);
+      selectCamera(0);      
+      for (int i = 0; i<m_cameras.size(); i++){
+	std::string strID;
+	m_cameras[i]->GetID(strID);
+	cameraIds.push_back(strID);
+      }
     }
     else{
       std::cout << "Not a single suitable camera was found!" << std::endl;
       return -1;
     }
+
+
     
     int ok = openGrayModeCameras();
 
