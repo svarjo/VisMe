@@ -1,9 +1,28 @@
+/******************************************************************************************
+ * file: settings.h
+ *
+ * typedefinitions for data structures in VisMe project:
+ *
+ *  - struct cameraSettings_t           : general settings for capturing data
+ *  - struct experimentSettings_t       : settings for a given experiment mode
+ *  - struct saveSettings_t             : saving information
+ *  - enum imageDirectoryPrefixType_t
+ *  - enum fileCompressionType_t
+ *  - enum experimentMode_t
+ *
+ * namespace:  VisMe::Settings::
+ *          
+ * Sami Varjo 2013
+ ********************************************************************************************/
+
 #ifndef SETTINGS_HEADER
 #define SETTINGS_HEADER
 
 #include <vector>
 #include <string>
 #include <cstdlib>
+
+#include <camCtrlInterface.h>
 
 namespace VisMe{
 
@@ -50,8 +69,12 @@ namespace VisMe{
     fileCompressionType_t compression;
   }saveSettings_t;
 
-
   }//end namespace Settings
+
+  //API
+  void setCameraToSettings ( CamCtrlInterface *camCtrl, Settings::cameraSettings_t *p_CamSet );
+
+
 }//end namespace VisMe
 
 #endif

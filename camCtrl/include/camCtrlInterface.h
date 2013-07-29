@@ -1,3 +1,15 @@
+/******************************************************************************************
+ * file: camCtrlInterface.h
+ *
+ * A pure virtual interface for controlling and capturing using HW cameras.
+ * Inheret the class for real implementation of camera controllers.
+ *
+ * namespace:  VisMe::
+ *          
+ * 2013 Sami Varjo
+ ********************************************************************************************/
+
+
 #ifndef CAM_CTRL_INTERFACE_H 
 #define CAM_CTRL_INTERFACE_H 
 
@@ -9,8 +21,16 @@ namespace VisMe{
     virtual ~CamCtrlInterface() {};
 
     enum camParam_t{
-      EXP_TIME_VALUE, APERTURE_VALUE, GAIN_VALUE, WHITEBALANCE_VALUE,
-      EXP_TIME_AUTO, APERTURE_AUTO, GAIN_AUTO, WHITEBALANCE_AUTO
+      PARAM_GAIN_AUTO, 
+      PARAM_EXPTIME_AUTO, 
+      PARAM_WHITEBALANCE_AUTO,
+      PARAM_IRIS_AUTO,
+
+      PARAM_GAMMA_VALUE,
+      PARAM_GAIN_VALUE, 
+      PARAM_IRIS_VALUE,
+      PARAM_EXPTIME_VALUE, 
+
     };
 
     /*
@@ -31,7 +51,7 @@ namespace VisMe{
     /*
      * Capture a single image 
      */
-    virtual void captureImage( void ) = 0;
+    virtual void captureImage( void *buffer ) = 0;
 
     /*
      * Capture a stream

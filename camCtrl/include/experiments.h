@@ -1,10 +1,14 @@
-/*
+/*********************************************************************
+ * experiments.h
+ *
  * Define the prototypes for the experiments available for main
  * with the required global variables containing various 
- * settings from ini file. 
+ * settings from ini file. (VisMe project)
+ *
+ * namespace:  VisMe::
  *
  * S.Varjo 2013
- */
+ *********************************************************************/
 
 #ifndef _EXPERIMENTS_H_
 #define _EXPERIMENTS_H_
@@ -45,7 +49,7 @@ namespace VisMe
   //TESTING (TODO CLEAN UP)
   void run_debug_filenames();
   void run_test_tiff_saving();
-  void run_test_tiff_load();
+  void run_test_tiff_load(char * fileIn);
 
 }
 

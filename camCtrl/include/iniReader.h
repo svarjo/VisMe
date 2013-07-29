@@ -1,3 +1,13 @@
+/***************************************************************************
+ * file: iniReader.h
+ * 
+ * Methods for accessing ini setup file and reading the data to settings.h
+ * datastructures. 
+ *
+ * namespace:  VisMe::Settings::
+ *
+ * Sami Varjo 2013
+ ***************************************************************************/
 #ifndef INI_READER_H
 #define INI_READER_H
 

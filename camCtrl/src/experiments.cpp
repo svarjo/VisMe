@@ -1,12 +1,19 @@
+/* experiments.cpp
+ *
+ * impementation for experiments.h
+ *
+ * S.Varjo 2013
+ */
+
 #include <iostream>
 #include <time.h>
 #include <unistd.h>
-
 
 #include "settings.h"
 #include "experiments.h"
 #include "fileIO.h"
 #include "commonImage.h"
+
 
 namespace VisMe{
 
@@ -43,9 +50,71 @@ namespace VisMe{
 
   void run_image_stack_capture()
   {
+    Settings::cameraSettings_t *p_CamSet;
 
-    std::cout << "run_image_stack_capture() stub" << std::endl;
-  
+    commonImage_t imgBuffer[cameraIds.size()];
+
+    //Init settings for each camera:
+    for (int camId=0; camId < cameraIds.size(); camId++ ){
+      //Use the first setting of image stack
+      camCtrl->selectCamera(camId);
+      setCameraToSettings  ( camCtrl, &(experimentSettings.imageStack[0]) );     
+
+      int w,h,c,bpp;
+      camCtrl->getImageSize( &imgBuffer[camId].width,  &imgBuffer[camId].height, &c, &bpp );
+
+      //OBS possible memory leak with ctrl+c
+      if (c==1 && bpp < 9){
+	imgBuffer[camId].mode = commonImage::Gray8bpp;
+	imgBuffer[camId].data = (void*)malloc( imgBuffer[camId].width*imgBuffer[camId].height*sizeof(char) );
+      }
+      else if (c==1 && bpp < 17){
+	imgBuffer[camId].mode = commonImage::Gray16bpp;
+	imgBuffer[camId].data = (void*)malloc( imgBuffer[camId].width*imgBuffer[camId].height*sizeof(char)*2 );
+      }
+      else if (c==3 && bpp ==8){
+	imgBuffer[camId].mode = commonImage::RGB8bpp;
+	imgBuffer[camId].data =  (void*)malloc( imgBuffer[camId].width*imgBuffer[camId].height*sizeof(char)*3 );
+      }
+      else if (c==4 && bpp ==8){
+	imgBuffer[camId].mode = commonImage::RGBA8bpp;
+	imgBuffer[camId].data = (void*)malloc( imgBuffer[camId].width*imgBuffer[camId].height*sizeof(char)*4 );
+      }
+      else{
+	std::cerr << "Unsupported image format encountered : " << c 
+		  << " channels with " << bpp << "bits per pixel" << std::endl;
+	return;
+      }
+
+      if (imgBuffer[camId].data == NULL){
+	std::cerr << "Error while allocating image buffers for experiment" << std::endl;
+	return;
+      }
+      
+    }
+
+    
+    while(1){
+       
+      for (int imageId=0; imageId < experimentSettings.imageStack.size(); imageId++ ) {
+	p_CamSet = &(experimentSettings.imageStack[imageId]);
+
+	for (int camId=0; camId < cameraIds.size(); camId++ ) {
+	  camCtrl->selectCamera(camId);
+	  camCtrl->setParameter( CamCtrlInterface::PARAM_EXPTIME_AUTO,  (void*)&p_CamSet->autoexposure, sizeof(bool) );
+	  camCtrl->captureImage();
+	}
+
+	//Wait for capture and store results
+	for (int camId=0; camId < cameraIds.size(); camId++ ) {
+	  
+	}
+
+      }
+
+      std::cout << "run_image_stack_capture() stub" << std::endl;
+      sleep( experimentSettings.captureInterval );
+    }
   }
 
   void run_single_capture()
@@ -257,7 +326,7 @@ namespace VisMe{
     short data[100][100];
     for (int i=0;i<100;i++)
       for (int j=0;j<100;j++)
-	data[i][j]=i*i;
+	data[i][j]=i*j*1;
 
     commonImage::commonImage_t image;
     image.width = 100;
@@ -271,23 +340,37 @@ namespace VisMe{
     
   }
 
-  void run_test_tiff_load()
+  void run_test_tiff_load(char * fileIn)
   {
     commonImage::commonImage_t image;
-
-    std::string fileIn = "./debug100x100.tiff";
-    commonImage::readTIFF( fileIn.c_str(), &image );
+    commonImage::readTIFF( fileIn, &image );
 
     if (! image.data )
       std::cout << "Error loading image: " << fileIn << std::endl;
     else{
-
-      short *pData = (short*)(image.data);
-      int count = image.height * image.width;
-      while (count-- > 0)
-	  *pData = 65535-*pData++;
       
-      commonImage::saveTIFF( "./debug100x100_load_invert_test.tiff", &image );
+      if (image.mode == Gray16bpp){
+	unsigned short *pData = (unsigned short*)(image.data);
+	int count = image.height * image.width;
+	while (count-- > 0)
+	  *pData = 65535-*pData++;      
+      }
+
+      if (image.mode == Gray8bpp){
+	char *pData = (char*)(image.data);
+	int count = image.height * image.width;
+	while (count-- > 0)
+	  *pData = 255-*pData++;
+      }
+
+      if (image.mode == RGB8bpp){
+	char *pData = (char*)(image.data);
+	int count = image.height * image.width * 3;
+	while (count-- > 0)
+	  *pData = 255-*pData++;
+      }
+
+      commonImage::saveTIFF( "./debug_load_invert_save.tiff", &image, commonImage::COMPRESSION_ZIP );
 
     }
 

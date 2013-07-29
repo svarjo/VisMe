@@ -1,6 +1,15 @@
+/******************************************************************************************
+ * file: camCtrlVmbAPI.cpp
+ *
+ * Implement the camCtrlVmbAPI.h          
+ *
+ * 2013 Sami Varjo
+ *
+ ********************************************************************************************/
 #include <cstdlib>
 #include <iostream>
 #include <vector>
+#include <cstring>
 
 #include "camCtrlVmbAPI.h"
 #include "experiments.h"
@@ -313,9 +322,7 @@ namespace VisMe{
   {
 
     if (!m_cameras.empty()){
-
       m_cameras.clear(); //Camera destructor implicitly closes the camera beforehand
-
     }
 
     if (m_payloadSize != NULL)
@@ -351,32 +358,78 @@ namespace VisMe{
       }     
     }
   }
+  
+  /*****************************************************************************
+   * Get pointer of selected camera 
+   */
+  CameraPtr CamCtrlVmbAPI::getSelectedCamera(void){return pSelectedCamera;}
 
+  ///////////////////////////////////////////////////////////////////////////////
+  //
+  //  APIAPIAPIAPIAPIAPIAPIAPIAPIAPIAPIAPIAPIAPIAPIAPIAPIAPIAPIAPIAPIAPIAPIAPI
 
   /*****************************************************************************/
   /* Override the virtual interface functions                                  */
   /*****************************************************************************/
-  /*
+
+  /*****************************************************************************
    * Select the active camera by enumeration id (int)
    */
   void CamCtrlVmbAPI::selectCamera( int id )
   {
-    if ( id > m_cameras.size()-1 || id < 0 )
-    {
-       return;
-    }
+    if ( id > m_cameras.size()-1 || id < 0 )  { return; }
 
     m_selectedCameraId = id;
     pSelectedCamera = m_cameras[id];
 
   }
 
-
-void CamCtrlVmbAPI::captureImage( void )
+  /*****************************************************************************
+   * Send request to capture an image from selected camera at FramePter pFrame
+   * Synchronous action (ie blocking call)
+   */
+void CamCtrlVmbAPI::captureImage( void *buffer  )
 {
+  if (buffer == NULL)
+    return;
+  
+  /*
+  Frame newFrame( buffer, m_payloadSize[m_selectedCameraId] );
+  err = Vimba.AcquireSingleImage( pSelectedCamera, &Frame );
+  */
+
+  FramePtr pFrame;
+  err = pSelectedCamera->AcquireSingleImage( pFrame, 2000);
+    
+  if ( err == VmbErrorSuccess ) {
+    // See if frame is not corrupt
+    VmbFrameStatusType eReceiveStatus;
+    err = pFrame->GetReceiveStatus( eReceiveStatus );
+    if (    VmbErrorSuccess == err && VmbFrameStatusComplete == eReceiveStatus ){
+
+      VmbUint32_t buffSize;
+      pFrame->GetBufferSize( buffSize );
+
+      VmbUchar_t *pIn;
+      err = pFrame->GetImage( pIn );
+	
+      memcpy(buffer, pIn, buffSize);
+
+    }	
+  }
+}
+
+
+/*
+void CamCtrlVmbAPI::captureImageAsyc( void ) 
+ {
+
+  FramePtr pFrame;
+
+  IFrameObserverPtr pFO( new FrameObserver(pC, camId) );       
+  err = pC->RegisterObserver(pC);
 
   //Define the capture buffer (frame)
-  FramePtr pFrame;
   pFrame.reset( new Frame( m_payloadSize[ m_selectedCameraId ] ) );
   err = pSelectedCamera->AnnounceFrame( pFrame );
   if (err != VmbErrorSuccess ){
@@ -400,19 +453,62 @@ void CamCtrlVmbAPI::captureImage( void )
     return;    
   }
 
-  m_frames[m_selectedCameraId].push_back(pFrame);  
-  std::cout << "captureImage Stub" << std::endl;
+  //  m_frames[m_selectedCameraId].push_back(pFrame);  
+  //  std::cout << "captureImage Stub" << std::endl;
 
 }
+  */
 
+  
 void CamCtrlVmbAPI::captureStream( void )
 {
   std::cout << "captureStream Stub" << std::endl;
 }
-
+  
 void CamCtrlVmbAPI::setParameter( camParam_t parameter, void *value, int valueByteSize)
 {
   
+  std::cout << "CamCtrlVmbAPI::setParameter stub *IMPLEMENTATION MISSING*" << std::endl;
+
+  switch (parameter){
+  case PARAM_GAIN_AUTO:
+
+    break;
+
+  case PARAM_EXPTIME_AUTO:
+
+    break;
+
+  case  PARAM_WHITEBALANCE_AUTO:
+
+    break;
+
+  case PARAM_IRIS_AUTO:
+
+    break;
+
+  case PARAM_GAMMA_VALUE:
+
+    break;
+
+  case PARAM_GAIN_VALUE:
+
+    break;
+
+  case PARAM_IRIS_VALUE:
+
+    break;
+
+  case PARAM_EXPTIME_VALUE:
+
+    break;
+
+  default:
+    std::cerr << "camCtrlVmbAPI - unsupported parameter encountered: " << parameter << std::endl;
+    break;
+
+  }
+
 }
 
 

@@ -1,14 +1,10 @@
-/*
- * file: camCtrl.h
+/******************************************************************************************
+ * file: camCtrlVmbAPI.h
  *
- * purpose: define the camera control class for hanlding cameras using 
- *          Vimba SDK from Advancded Vision Technologies. Hide the initialization
- *          of the camera handler, enumeration of the cameras, etc. 
- *
- *          Make public only the required access to the cameras (set parameter, capture image etc..)
+ * Implement the camCtrlInterface for AVT cameras (GigE and USB) using Vimba SDK 
  *          
- *
- */
+ * 2013 Sami Varjo
+ ********************************************************************************************/
 
 #ifndef VISME_CAMCTRL_VMBAPI_H
 #define VISME_CAMCTRL_VMBAPI_H
@@ -41,7 +37,7 @@ namespace VisMe{
    void selectCamera( int id );
    void selectCamera( const char *pStrId );
 
-   void captureImage( void ) ;
+   void captureImage( void* buffer = NULL ) ;
    void captureStream( void ) ;
    
    void setParameter( camParam_t parameter, void *value, int valueByteSize );
@@ -52,6 +48,8 @@ namespace VisMe{
 
    //Own interfaces
    int InitAll(void);
+   CameraPtr getSelectedCamera(void);
+   
 
   private:
 

@@ -1,3 +1,11 @@
+/***************************************************************************
+ * file: iniReader.cpp
+ * 
+ * Implementation for iniReader.h
+ *
+ * Sami Varjo 2013
+ ***************************************************************************/
+
 #include <cstdlib>
 #include <iostream>
 #include <cstdio>

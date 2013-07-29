@@ -1,13 +1,23 @@
-/*****************************************************************************************
+/******************************************************************************
  * main.cpp
  *
  * Main entrypoint for the camera control software
  * Currently only GigE cameras from AVT are supported (see camCtrlVmbAPI.h)
  *
- *
  *  Sami Varjo 2013
+ *-----------------------------------------------------------------------------
  *
- *****************************************************************************************/
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR "AS IS" AND ANY EXPRESS OR IMPLIED
+ * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF TITLE,
+ * NON-INFRINGEMENT, MERCHANTABILITY AND FITNESS FOR A PARTICULAR  PURPOSE ARE
+ * DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT,
+ * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+ * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR
+ * TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *******************************************************************************/
 #include <iostream>
 #include <signal.h>
 
@@ -149,9 +159,13 @@ int main(int argc, char** argv)
 	run_debug_filenames(); //OK     
 	break;
       case 1:
-	run_test_tiff_saving();
-	run_test_tiff_load();
+	run_test_tiff_load( argv[2] );
 	break;
+      case 2:
+	run_test_tiff_saving();
+	break;
+	
+	
 	
       default:
 	std::cout << "Running [test] but id=" <<  experimentSettings.id << " not implemented" << std::endl;

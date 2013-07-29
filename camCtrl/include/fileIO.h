@@ -1,3 +1,13 @@
+/*****************************************************************
+ * fileIO.h
+ *
+ * Common filesystem routines (*nix)
+ *
+ * namespace:   FileIO::
+ *
+ * Sami Varjo 
+ *****************************************************************/
+
 #ifndef FILE_IO_H
 #define FILE_IO_H
 
@@ -17,6 +27,7 @@ namespace FileIO{
   bool dirExist( char *path );
   bool fileExist( char *path );
   bool parameterFileExists(const std::string &filename); //A bit more verbose than fileExists
+
 
 
 }; //end namespace FileIO
