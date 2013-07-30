@@ -3,7 +3,7 @@
 # Check for dependencies and install if not found
 check_deps () {
 
-DEPS="libtiff4 libtiff4-dev libopencv-dev"
+DEPS="libtiff4 libtiff4-dev libopencv-core-dev libopencv-highgui-dev"
 
 count=0
 for i in $DEPS ; do
@@ -11,9 +11,9 @@ for i in $DEPS ; do
     if [ $? != 0 ] ; then
         echo "Installing deps ..."
         apt-get install $i -y
-	let count = count + 1
+        let count=count + 1
     fi
-done  
+done
 if [ $count -eq 0 ]; then
   echo "Everything needed was found - nothing was installed"
 fi

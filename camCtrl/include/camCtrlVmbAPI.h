@@ -1,22 +1,25 @@
-/******************************************************************************************
- * file: camCtrlVmbAPI.h
+/**
+ * @file camCtrlVmbAPI.h
+ *
+ * @section DESCRIPTION
  *
  * Implement the camCtrlInterface for AVT cameras (GigE and USB) using Vimba SDK 
+ *
  *          
- * 2013 Sami Varjo
- ********************************************************************************************/
+ * @author Sami Varjo 2013
+ */
 
 #ifndef VISME_CAMCTRL_VMBAPI_H
 #define VISME_CAMCTRL_VMBAPI_H
 
 #include <VimbaCPP/Include/VimbaCPP.h>
 
+#include "settings.h"
 #include "camCtrlInterface.h"
 
 using namespace AVT::VmbAPI;
 
 namespace VisMe{
-
   
   class UserCameraFactory;
   class GigECamera;
@@ -30,6 +33,7 @@ namespace VisMe{
   class CamCtrlVmbAPI : public CamCtrlInterface {
 
   public:
+
     CamCtrlVmbAPI(void);
    ~CamCtrlVmbAPI(void);
 
@@ -47,17 +51,37 @@ namespace VisMe{
    void freeCameras( void );
 
    //Own interfaces
+
+   /**
+    * Initialize class and try to find all possible cameras using GigE or USB interfaces
+    * @return negative value on error and zero with success. 
+    */
    int InitAll(void);
+
+   /**
+    * Accessor function
+    * @return an auto pointer to the currently selected camera
+    */
    CameraPtr getSelectedCamera(void);
    
+   /**
+    * Accessor function
+    * @return return the number of cameras found by the controller
+    */
    int getNumberOfCameras(void);
 
-  private:
+   /**
+    * Set the currently selected camera to the given settings
+    * @param p_CamSet pointer to a Settings::cameraSettings_t
+    */ 
+   void setCameraToSettings ( Settings::cameraSettings_t *p_CamSet );
 
+
+  private:
+   
    void initVimba(void);
    void populateMyCameraVector(CameraPtrVector allCameras);
    int  openGrayModeCameras(void);
-
 
    VimbaSystem &Vimba; //Note reference! 
 

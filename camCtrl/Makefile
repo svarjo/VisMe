@@ -37,7 +37,7 @@ OBJ_FILES	= $(OBJ_DIR)/main.o \
 		  $(OBJ_DIR)/experiments.o\
 		  $(OBJ_DIR)/fileIO.o\
 		  $(OBJ_DIR)/commonImage.o\
-		  $(OBJ_DIR)/settings.o
+#		  $(OBJ_DIR)/settings.o
 #		  $(OBJ_DIR)/FrameObserver.o
 
 
@@ -50,7 +50,7 @@ SOURCES	= 	$(SRCDIR)/main.cpp \
 		$(SRCDIR)/experiments.cpp\
 		$(SRCDIR)/fileIO.cpp\
 		$(SRCDIR)/commonImage.cpp\
-		$(SRCDIR)/settings.cpp
+#		$(SRCDIR)/settings.cpp
 #		$(SRCDIR)/FrameObserver.cpp
 
 #OBJECTS=$(OBJ_DIR)/$(SOURCES:.cpp.c=.o) 

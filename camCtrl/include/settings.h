@@ -1,5 +1,7 @@
 /******************************************************************************************
- * file: settings.h
+ * @file settings.h
+ *
+ * @section DESCRIPTION
  *
  * typedefinitions for data structures in VisMe project:
  *
@@ -12,7 +14,7 @@
  *
  * namespace:  VisMe::Settings::
  *          
- * Sami Varjo 2013
+ * @author Sami Varjo 2013
  ********************************************************************************************/
 
 #ifndef SETTINGS_HEADER
@@ -69,10 +71,6 @@ namespace VisMe{
   }saveSettings_t;
 
   }//end namespace Settings
-
-  //API
-  void setCameraToSettings ( CamCtrlInterface *camCtrl, Settings::cameraSettings_t *p_CamSet );
-
 
 }//end namespace VisMe
 

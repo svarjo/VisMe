@@ -2,7 +2,7 @@
  *
  * impementation for experiments.h
  *
- * S.Varjo 2013
+ * @author S.Varjo 2013
  */
 
 #include <iostream>
@@ -82,7 +82,7 @@ namespace VisMe{
 
       //Use the first setting of image stack
       camCtrl->selectCamera(camId);
-      setCameraToSettings  ( camCtrl, &(experimentSettings.imageStack[0]) );     
+      camCtrl->setCameraToSettings(  &(experimentSettings.imageStack[0]) );     
 
       int w,h,c,bpp;
       camCtrl->getImageSize( &imgBuffer[camId].width,  &imgBuffer[camId].height, &c, &bpp );
@@ -233,13 +233,13 @@ namespace VisMe{
 
     // Take a single image with a camera    
     camCtrl->selectCamera(camId);
-    setCameraToSettings( camCtrl, &(experimentSettings.imageStack[0]) );     
+    camCtrl->setCameraToSettings( &(experimentSettings.imageStack[0]) );
     camCtrl->captureImage( imBuff.data );
      
     generateImageDir( camId, pathBuff );
     int fileNameCount = 0;
     generateImageName( pathBuff, nameBuff, &fileNameCount );
-  
+   
     switch(saveSettings.compression){
 
       case Settings::NO:{

@@ -516,6 +516,26 @@ void CamCtrlVmbAPI::setParameter( camParam_t parameter, void *value, int valueBy
 }
 
 
+  /** 
+   * Set selected camera to given set of parameters
+   *
+   * @param p_camSet pointer to the cameras settings struct 
+   */  
+  void CamCtrlVmbAPI::setCameraToSettings ( Settings::cameraSettings_t *p_CamSet )
+  {
+    setParameter( CamCtrlInterface::PARAM_GAIN_AUTO,     (void*)&p_CamSet->autogain,     sizeof(bool) );
+    setParameter( CamCtrlInterface::PARAM_EXPTIME_AUTO,  (void*)&p_CamSet->autoexposure, sizeof(bool) );
+    setParameter( CamCtrlInterface::PARAM_WHITEBALANCE_AUTO, (void*)&p_CamSet->autowhitebalance, sizeof(bool) );
+    setParameter( CamCtrlInterface::PARAM_IRIS_AUTO,     (void*)&p_CamSet->autoiris, sizeof(bool) );
+
+    setParameter( CamCtrlInterface::PARAM_GAMMA_VALUE,   (void*)&p_CamSet->gamma, sizeof(double) );
+    setParameter( CamCtrlInterface::PARAM_GAIN_VALUE,    (void*)&p_CamSet->gain, sizeof(double) );
+    setParameter( CamCtrlInterface::PARAM_IRIS_VALUE,    (void*)&p_CamSet->iris, sizeof(double) );
+    setParameter( CamCtrlInterface::PARAM_EXPTIME_VALUE, (void*)&p_CamSet->exposureTime, sizeof(double) );
+
+  }
+
+
 void CamCtrlVmbAPI::getImageSize(int *width, int *height, int *channels, int *bitsPerPixel)
 {
   FeaturePtr feature;
