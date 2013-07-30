@@ -30,7 +30,7 @@
 using namespace VisMe;
 using namespace VisMe::Settings; 
 
-#define DEBUG 1
+//#define DEBUG 1
 
 /********************************************************
  * Signal handler for ctrl+c to quit cleanly 
@@ -123,11 +123,6 @@ int main(int argc, char** argv)
   else
     init_rval = camCtrl->InitByIds( cameraIds );
 
-  //////////////////////////////////////////////////
-  //make a data directory for each camera
-  for (int i = 0; i<cameraIds.size(); i++)
-    generateCamDir(i+1, buf);  
-
 
   //////////////////////////////////////////////////
   // Run experiments if everything in init was OK
@@ -140,6 +135,12 @@ int main(int argc, char** argv)
   }
   else{
     
+    //////////////////////////////////////////////////
+    //make a data directory for each camera
+    for (int i = 0; i<cameraIds.size(); i++)
+      generateCamDir(i+1, buf);  
+
+
     switch (experimentSettings.mode) {
    
     case IMAGE_STACK_EXPTIME:
