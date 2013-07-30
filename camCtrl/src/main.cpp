@@ -50,6 +50,8 @@ int main(int argc, char** argv)
 
   bool forceAllCameras = false;
 
+  char buf[1024];
+
   ///////////////////////////////////////////////////
   // Register signal handler for ctrl+c (clean exit)
   ///////////////////////////////////////////////////
@@ -124,7 +126,7 @@ int main(int argc, char** argv)
   //////////////////////////////////////////////////
   //make a data directory for each camera
   for (int i = 0; i<cameraIds.size(); i++)
-    generateCamDir(i+1);  
+    generateCamDir(i+1, buf);  
 
 
   //////////////////////////////////////////////////

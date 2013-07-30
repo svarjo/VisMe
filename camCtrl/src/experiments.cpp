@@ -7,6 +7,7 @@
 
 #include <iostream>
 #include <time.h>
+#include <sys/time.h>
 #include <unistd.h>
 
 #include "settings.h"
@@ -14,6 +15,8 @@
 #include "fileIO.h"
 #include "commonImage.h"
 
+#include <opencv2/core/core.hpp>       // OpenCV is used only for 
+#include <opencv2/highgui/highgui.hpp> // displaying images (ok bit bloated but easy...)
 
 namespace VisMe{
 
@@ -34,8 +37,13 @@ namespace VisMe{
   /////////////////////////////////////////////////
   const int FILENAME_BUFFER_LENGTH = 1024;
   const int PATHNAME_BUFFER_LENGTH = 1024;
-  char pathNameBuffer[FILENAME_BUFFER_LENGTH];
-  char fileNameBuffer[PATHNAME_BUFFER_LENGTH];
+
+  //TODO FIX:
+  //OBS never freed if chatched CTRL+C signal to end program...
+  char **pathNameBuffer;
+  char **fileNameBuffer;
+  commonImage_t *imgBuffer;
+  //END FIX
 
   int currentOutImageIndex=0;
   int currentOutImageFolderIndex=0;
@@ -51,11 +59,27 @@ namespace VisMe{
   void run_image_stack_capture()
   {
     Settings::cameraSettings_t *p_CamSet;
+    
+    struct timeval starttime, endtime, timediff;
 
-    commonImage_t imgBuffer[cameraIds.size()];
+    int numCameras = cameraIds.size();  
+
+    char windowNameBuffer[numCameras][128];
+ 
+    imgBuffer = new commonImage_t[numCameras]; //size, type, data
+
+    pathNameBuffer = new char*[numCameras];
+    fileNameBuffer = new char*[numCameras];
+
+    int cvImageType;
 
     //Init settings for each camera:
-    for (int camId=0; camId < cameraIds.size(); camId++ ){
+    for (int camId=0; camId < numCameras; camId++ ){
+      
+      //Make names buffer
+      pathNameBuffer[camId] = new char[PATHNAME_BUFFER_LENGTH];
+      fileNameBuffer[camId] = new char[FILENAME_BUFFER_LENGTH];
+
       //Use the first setting of image stack
       camCtrl->selectCamera(camId);
       setCameraToSettings  ( camCtrl, &(experimentSettings.imageStack[0]) );     
@@ -63,22 +87,26 @@ namespace VisMe{
       int w,h,c,bpp;
       camCtrl->getImageSize( &imgBuffer[camId].width,  &imgBuffer[camId].height, &c, &bpp );
 
-      //OBS possible memory leak with ctrl+c
+      //Allocate memory for each data buffer, OBS possible memory leak with ctrl+c
       if (c==1 && bpp < 9){
 	imgBuffer[camId].mode = commonImage::Gray8bpp;
 	imgBuffer[camId].data = (void*)malloc( imgBuffer[camId].width*imgBuffer[camId].height*sizeof(char) );
+	cvImageType = CV_8UC1;
       }
       else if (c==1 && bpp < 17){
 	imgBuffer[camId].mode = commonImage::Gray16bpp;
 	imgBuffer[camId].data = (void*)malloc( imgBuffer[camId].width*imgBuffer[camId].height*sizeof(char)*2 );
+	cvImageType = CV_16UC1;
       }
       else if (c==3 && bpp ==8){
 	imgBuffer[camId].mode = commonImage::RGB8bpp;
 	imgBuffer[camId].data =  (void*)malloc( imgBuffer[camId].width*imgBuffer[camId].height*sizeof(char)*3 );
+	cvImageType = CV_8UC3;
       }
       else if (c==4 && bpp ==8){
 	imgBuffer[camId].mode = commonImage::RGBA8bpp;
 	imgBuffer[camId].data = (void*)malloc( imgBuffer[camId].width*imgBuffer[camId].height*sizeof(char)*4 );
+	cvImageType = CV_8UC4;
       }
       else{
 	std::cerr << "Unsupported image format encountered : " << c 
@@ -90,36 +118,101 @@ namespace VisMe{
 	std::cerr << "Error while allocating image buffers for experiment" << std::endl;
 	return;
       }
-      
+
+      //Open one window per camera (if preview set)
+      if (experimentSettings.preview){
+	sprintf( windowNameBuffer[camId], "Camera %u", camId ); 
+	cv::namedWindow( windowNameBuffer[camId] , CV_WINDOW_AUTOSIZE );
+      }
+
     }
 
+    char *pCurrPath;
+    char *pCurrName;
+
+    int fileNameId;
     
     while(1){
        
+      gettimeofday( &starttime, NULL );
+      fileNameId=0; //start naming each image set from 0 (assume own folders)
+
+      //Generate new folder for this set of images (for each camera)
+      for (int camId=0; camId < numCameras; camId++){
+	generateImageDir( camId, pathNameBuffer[camId] );
+      }
+      
+      //TODO
+      //Should fork for each camera...
       for (int imageId=0; imageId < experimentSettings.imageStack.size(); imageId++ ) {
 	p_CamSet = &(experimentSettings.imageStack[imageId]);
 
-	for (int camId=0; camId < cameraIds.size(); camId++ ) {
+	for (int camId=0; camId < numCameras; camId++ ) {
 	  camCtrl->selectCamera(camId);
 	  camCtrl->setParameter( CamCtrlInterface::PARAM_EXPTIME_AUTO,  (void*)&p_CamSet->autoexposure, sizeof(bool) );
-	  camCtrl->captureImage();
+	  camCtrl->captureImage( imgBuffer[camId].data ); //Blocking call to capture image
 	}
 
-	//Wait for capture and store results
-	for (int camId=0; camId < cameraIds.size(); camId++ ) {
-	  
+	//Wait for capture and store results (Now blocking for each camera)
+	for (int camId=0; camId < numCameras; camId++ ) {
+	  generateImageName( pathNameBuffer[camId], fileNameBuffer[camId], &fileNameId );
+	  commonImage::saveTIFF( fileNameBuffer[camId], 
+				 &imgBuffer[camId], 
+				 commonImage::COMPRESSION_ZIP, true); //true = verbose
 	}
+      }
+
+      //Show the last capture from the stack (could be the middle one...)
+      if (experimentSettings.preview){
+	for (int camId =0; camId < numCameras; camId++){
+	  sprintf( windowNameBuffer[camId], "Camera %u", camId ); 
+	  cv::namedWindow( windowNameBuffer[camId] , CV_WINDOW_AUTOSIZE );
+		
+	  cv::Mat imageIn( imgBuffer[camId].width, imgBuffer[camId].height, cvImageType, 
+			   imgBuffer[camId].data, cv::Mat::AUTO_STEP);
+
+	  cv::Mat image8bpp( imgBuffer[camId].width, imgBuffer[camId].height, CV_8UC1);
+	
+	  if (imgBuffer[camId].mode == Gray16bpp)
+	    imageIn.convertTo(image8bpp, CV_8UC1, 255.0/65535.0); //OBS if underlying data is not really 16bit -> dark
+	  else
+	    imageIn.convertTo(image8bpp, CV_8UC1);
+
+	  cv::imshow( windowNameBuffer[camId], image8bpp);
+	}
+	cv::waitKey(1); //Force image window update by waiting 1ms
 
       }
 
-      std::cout << "run_image_stack_capture() stub" << std::endl;
-      sleep( experimentSettings.captureInterval );
+      //Wait for given interval
+      gettimeofday( &endtime, NULL);
+      timersub(&endtime, &starttime, &timediff);
+      int sleepTime_sec = experimentSettings.captureInterval-timediff.tv_sec;
+
+      if (sleepTime_sec < 0){	
+	std::cout << "Warning! The image stack capture time is longer than the set captureInterval" << std::endl
+		  << "set: " << experimentSettings.captureInterval <<  "s  time elapsed: " << timediff.tv_sec 
+		  << "s" << std::endl;
+      }
+      else{
+	sleep( sleepTime_sec );
+	usleep ( timediff.tv_usec );
+      }
+
     }
   }
 
   void run_single_capture()
   {
-    std::cout << "run_single_capture() stub" << std::endl;
+    
+    int numCameras = cameraIds.size();   
+    imgBuffer = new commonImage_t[numCameras]; //size, type, data
+    pathNameBuffer = new char*[numCameras];
+    fileNameBuffer = new char*[numCameras];
+
+    
+
+
   }
 
   void run_streaming_view()
@@ -146,7 +239,7 @@ namespace VisMe{
   //////////////////////////////////////////////////////////////////////////////////////////
   // Generate a cam directory under the main path
   // If directory already exist do nothing
-  bool generateCamDir(int idx){    
+  bool generateCamDir(int idx, char *pathNameBuffer){    
 
     if (snprintf( pathNameBuffer, PATHNAME_BUFFER_LENGTH, "%s%s%d\0", 
 		  saveSettings.outPath.c_str(), 
@@ -162,7 +255,7 @@ namespace VisMe{
     return false;
   }
 
-  char* generateImageDir( int camId )
+  char* generateImageDir( int camId, char *pathOut )
   {
 
     switch (saveSettings.imageDirectoryPrefixType) {
@@ -174,18 +267,18 @@ namespace VisMe{
 	struct tm *p_tm = localtime( &now );
 	strftime( timeBuf, sizeof(timeBuf), "%Y-%m-%d_%Hh%Mm%Ss", p_tm );
 
-	if (snprintf( pathNameBuffer, PATHNAME_BUFFER_LENGTH, "%s%s%d/%s/\0", 
+	if (snprintf( pathOut, PATHNAME_BUFFER_LENGTH, "%s%s%d/%s/\0", 
 		      saveSettings.outPath.c_str(), 
 		      saveSettings.cameraDirectoryPrefix.c_str(), 
 		      camId,
 		      timeBuf
 		      ) > 0  )
 	  {
-	    int rval = FileIO::makeDirectory( pathNameBuffer, false, true );
+	    int rval = FileIO::makeDirectory( pathOut, false, true );
 	    if (rval < 0)
 	      return NULL;
 	    else
-	      return pathNameBuffer;
+	      return pathOut;
 	  }
 	break;
       }
@@ -197,9 +290,8 @@ namespace VisMe{
 	// -OBS be wary that the currentOutImageFilderIndex is common for _EVERY_ camera
 	//  that is - it is expected that _ALL_ cameras follow the same saving schema
 	while (!uniqueName){
-
 	  
-	  if (snprintf( pathNameBuffer, PATHNAME_BUFFER_LENGTH, "%s%s%d/%s%06d/", 
+	  if (snprintf( pathOut, PATHNAME_BUFFER_LENGTH, "%s%s%d/%s%06d/", 
 			saveSettings.outPath.c_str(), 
 			saveSettings.cameraDirectoryPrefix.c_str(),
 			camId,			
@@ -207,17 +299,17 @@ namespace VisMe{
 			currentOutImageFolderIndex
 			) > 0) {
 
-	    int rval = FileIO::makeDirectory( pathNameBuffer, false, false );
+	    int rval = FileIO::makeDirectory( pathOut, false, false );
 
 	    if (rval == 0){
 	      uniqueName = true;
-	      return pathNameBuffer;
+	      return pathOut;
 	    }	  
 	    else if (rval == FileIO::DIR_EXISTS)
 	      currentOutImageFolderIndex++;
 
 	    else if (rval == FileIO::DIR_ERROR){
-	      std::cout << "Error creating image directory: " << pathNameBuffer << std::endl;
+	      std::cout << "Error creating image directory: " << pathOut << std::endl;
 	      return NULL;
 	    }
 
@@ -227,12 +319,12 @@ namespace VisMe{
       }
     default ://NONE
       {
-	if (snprintf( pathNameBuffer, PATHNAME_BUFFER_LENGTH, "%s%s%d/", 
+	if (snprintf( pathOut, PATHNAME_BUFFER_LENGTH, "%s%s%d/", 
 		      saveSettings.outPath.c_str(), 
 		      saveSettings.cameraDirectoryPrefix.c_str(), 
 		      camId
 		      ) > 0) {
-	  return pathNameBuffer;
+	  return pathOut;
 	}else
 	  return NULL;
 	break;
@@ -241,7 +333,7 @@ namespace VisMe{
 
   }
 
-  char* generateImageName(char *path, int *p_lastIndex)
+  char* generateImageName(char *path, char *nameOut, int *p_lastIndex)
   {
     if (! FileIO::dirExist(path) ){ return NULL; }
 
@@ -258,18 +350,18 @@ namespace VisMe{
 
       snprintf( bufNumberedPrefix, 256, saveSettings.filenamePrefix.c_str(), idx );
 
-      if (snprintf( fileNameBuffer, FILENAME_BUFFER_LENGTH, "%s%s%s/", 
+      if (snprintf( nameOut, FILENAME_BUFFER_LENGTH, "%s%s%s\0", 
 		    path, // a slash terminated path is expected
 		    bufNumberedPrefix,
 		    saveSettings.filenameSuffix.c_str() ) > 0)
 	{
 
-	  if ( !FileIO::fileExist(fileNameBuffer) ) {
+	  if ( !FileIO::fileExist(nameOut) ) {
 	    uniqueName = true;
 	    if (p_lastIndex != NULL)
 	      *p_lastIndex = idx;
 
-	    return fileNameBuffer;
+	    return nameOut;
 	  }	  
 	  else 
 	    idx++;	    	    
@@ -286,12 +378,15 @@ namespace VisMe{
   {
     std::cout << "***** DEBUG filenames *****" << std::endl;
         
+    char pathBuffer[1024];
+    char nameBuffer[1024];
+
     char *p_CurrPath;
     char *p_CurrName;
     while(1){
       
       for (int camId = 1; camId < cameraIds.size()+1 ; camId++){
-	p_CurrPath = generateImageDir(camId);
+	p_CurrPath = generateImageDir(camId, pathBuffer);
 	if (p_CurrPath == NULL){
 	  std::cerr << "A NULL path encountered [generateImageDir]";
 	  exit(-1);
@@ -299,9 +394,10 @@ namespace VisMe{
 
 	currentOutImageIndex = 0;
 
-	for (int imId =0; imId < experimentSettings.imageStack.size(); imId++){	     
+	//	for (int imId =0; imId < experimentSettings.imageStack.size(); imId++){	     
+	for (int imId =0; imId < 4; imId++){	     
 
-	  p_CurrName = generateImageName(p_CurrPath, &currentOutImageIndex );
+	  p_CurrName = generateImageName(p_CurrPath, nameBuffer,  &currentOutImageIndex );
 
 	  if (p_CurrName == NULL){
 	    std::cerr << "A NULL file name encountered [generateImageName]";

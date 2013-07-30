@@ -392,26 +392,24 @@ void CamCtrlVmbAPI::captureImage( void *buffer  )
 {
   if (buffer == NULL)
     return;
-  
-  /*
-  Frame newFrame( buffer, m_payloadSize[m_selectedCameraId] );
-  err = Vimba.AcquireSingleImage( pSelectedCamera, &Frame );
-  */
-
-  FramePtr pFrame;
-  err = pSelectedCamera->AcquireSingleImage( pFrame, 2000);
     
+  Frame newFrame( (VmbUchar_t *)(buffer), m_payloadSize[m_selectedCameraId] );
+  FramePtr pF;
+  SP_SET(pF, &newFrame);
+
+  err = pSelectedCamera->AcquireSingleImage( pF, 1500 );
+  
   if ( err == VmbErrorSuccess ) {
     // See if frame is not corrupt
     VmbFrameStatusType eReceiveStatus;
-    err = pFrame->GetReceiveStatus( eReceiveStatus );
+    err = pF->GetReceiveStatus( eReceiveStatus );
     if (    VmbErrorSuccess == err && VmbFrameStatusComplete == eReceiveStatus ){
 
       VmbUint32_t buffSize;
-      pFrame->GetBufferSize( buffSize );
+      pF->GetBufferSize( buffSize );
 
       VmbUchar_t *pIn;
-      err = pFrame->GetImage( pIn );
+      err = pF->GetImage( pIn );
 	
       memcpy(buffer, pIn, buffSize);
 
@@ -459,10 +457,10 @@ void CamCtrlVmbAPI::captureImageAsyc( void )
 }
   */
 
-  
+
 void CamCtrlVmbAPI::captureStream( void )
 {
-  std::cout << "captureStream Stub" << std::endl;
+  std::cout << "captureStream Stub  *IMPLEMENTATION MISSING*" << std::endl;
 }
   
 void CamCtrlVmbAPI::setParameter( camParam_t parameter, void *value, int valueByteSize)

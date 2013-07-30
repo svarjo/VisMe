@@ -28,20 +28,18 @@ namespace VisMe
  extern CamCtrlVmbAPI *camCtrl;
  extern std::string setupFileName; 
 
- extern bool running;
- // extern char outputFileName[1024];
+
+ // extern bool running;
 
  //Misc shared variables required by the experiment settings (ok one could/should make a class of parameters, extend it for each experiment - but...)
- // extern bool saveAutoExposureFrame;
-
   //The experiments
   void run_image_stack_capture();
   void run_single_capture();
   void run_streaming_view();
 
-  bool generateCamDir(int idx);
-  char* generateImageDir(int camId);
-  char* generateImageName(char *path, int *p_lastIndex = NULL);
+  bool generateCamDir(int idx, char *pathNameBuffer);
+  char* generateImageDir(int camId, char *pathOut);
+  char* generateImageName(char *path, char *nameOut, int *p_lastIndex = NULL);
 
   void cleanExit(std::string msg);
 

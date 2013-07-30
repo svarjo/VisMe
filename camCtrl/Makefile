@@ -20,8 +20,8 @@ include $(MAKE_INCLUDE_DIR)/CopyData.mk
 SOURCE_DIR	 = $(PROJECT_DIR)/src
 INCLUDE_DIRS	 = -I$(PROJECT_DIR)/include 
 
-#CFLAGS		+= $(shell pkg-config opencv --cflags)
-#LIBS 		+= $(shell pkg-config opencv --libs)
+CFLAGS		+= $(shell pkg-config opencv --cflags)
+LIBS 		+= $(shell pkg-config opencv --libs)
 
 LIBS 		+= -ltiff
 LIBS		+= $(VIMBACPP_LIBS) 
