@@ -25,7 +25,7 @@
 #include "iniReader.h"
 #include "settings.h"
 #include "fileIO.h"
-#include "experiments.h"   //Contain also the global variables for experiments
+#include "experiments.h"   //Contain also the global variables for experiments (like settings)
 
 using namespace VisMe;
 using namespace VisMe::Settings; 
@@ -64,6 +64,7 @@ int main(int argc, char** argv)
     for (int i=1; i<argc;i++){
       std::string argStr = std::string(argv[i]);
 
+      //Help requested
       if ( argStr == "-h" ){
 	std::cout << "Usage: " << argv[0] << " setupFile.ini"  << " [-findAllCameras] [-h]"
 		  << std::endl << std::endl
@@ -75,6 +76,7 @@ int main(int argc, char** argv)
 		  << std::endl;
 	exit(0);
       }
+      //An .INI setup file is found
       else if ( ( argStr.length() >= SETUP_FILE_SUFFIX.length() ) && 
 		( argStr.compare( argStr.length()-SETUP_FILE_SUFFIX.length(), 				
 				  SETUP_FILE_SUFFIX.length(), SETUP_FILE_SUFFIX) == 0) 
@@ -85,6 +87,7 @@ int main(int argc, char** argv)
 	  exit(0);
 	}
       }
+      //Selector for camera enumeration mode (by pass the camera ids in INI)
       else if (argStr == "-findAllCameras"){
 	forceAllCameras = true;
       }
@@ -114,7 +117,7 @@ int main(int argc, char** argv)
 
   ///////////////////////////////////////////////////
   //Initialize the Vimba camera controller and 
-  // open cameras by ID  (see also possible InitAll)
+  // open cameras (default by ID )
   camCtrl = new CamCtrlVmbAPI();
   int init_rval;
 
@@ -123,11 +126,11 @@ int main(int argc, char** argv)
   else
     init_rval = camCtrl->InitByIds( cameraIds );
 
-
   //////////////////////////////////////////////////
   // Run experiments if everything in init was OK
-#ifdef DEBUG    
-  init_rval = 0;
+
+#ifdef DEBUG //Force running experiments even if init was not OK   
+  init_rval = 0; 
 #endif
 
   if (init_rval < 0){
@@ -140,42 +143,49 @@ int main(int argc, char** argv)
     for (int i = 0; i<cameraIds.size(); i++)
       generateCamDir(i+1, buf);  
 
-
     switch (experimentSettings.mode) {
    
     case IMAGE_STACK_EXPTIME:
-      run_image_stack_capture();
-      break;
-   
+      {
+	run_image_stack_capture();
+	break;
+      }
     case SINGLE:
-      run_single_capture();
-      break;
-
+      {
+	int cameraId = 0;
+	run_single_capture( cameraId );
+	break;
+      }
     case STREAMING_VIEW:
-      run_streaming_view();
-      break;
-      
+      {
+	run_streaming_view();
+	break;
+      }
     case DEBUG_TESTING:
+      {
+	switch (experimentSettings.id) 
+	  {
 
-      switch (experimentSettings.id){
-      case 0:
-	run_debug_filenames(); //OK     
-	break;
-      case 1:
-	run_test_tiff_load( argv[2] );
-	break;
-      case 2:
-	run_test_tiff_saving();
-	break;
-	
-	
-	
-      default:
-	std::cout << "Running [test] but id=" <<  experimentSettings.id << " not implemented" << std::endl;
-	break;
+	  case 0:{
+	    run_debug_filenames(); //OK     
+	    break;
+	  }
+	  case 1:{
+	    run_test_tiff_load( argv[2] );
+	    break;
+	  }
+	  case 2:{
+	    run_test_tiff_saving();
+	    break;
+	  }
+	  default:{
+	    std::cout << "Running [test] but id=" <<  experimentSettings.id << " not implemented" << std::endl;
+	    break;
+	  }
+	}
       }
     }
   }
- 
+
   cleanExit("Done");
 }

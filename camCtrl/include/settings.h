@@ -54,8 +54,7 @@ namespace VisMe{
 
   }experimentSettings_t;
 
-
-  enum fileCompressionType_t{ NO, LZW, JPEG };
+  enum fileCompressionType_t{ NO, LZW, ZIP, JPEG, PACKBITS };
 
   enum imageDirectoryPrefixType_t{ DATETIME, RUNNING, NONE };
 

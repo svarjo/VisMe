@@ -18,8 +18,7 @@
 #include "camCtrlVmbAPI.h"
 
 namespace VisMe
-{
-  
+{  
  //Common GLOBAL variables in VisMe for the experiments
  extern const std::string DEFAULT_SETUP_FILE_NAME;
  extern Settings::saveSettings_t saveSettings;
@@ -28,13 +27,12 @@ namespace VisMe
  extern CamCtrlVmbAPI *camCtrl;
  extern std::string setupFileName; 
 
-
  // extern bool running;
 
  //Misc shared variables required by the experiment settings (ok one could/should make a class of parameters, extend it for each experiment - but...)
   //The experiments
   void run_image_stack_capture();
-  void run_single_capture();
+  void run_single_capture(int camId=0);
   void run_streaming_view();
 
   bool generateCamDir(int idx, char *pathNameBuffer);

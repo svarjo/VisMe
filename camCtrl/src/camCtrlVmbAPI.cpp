@@ -364,6 +364,12 @@ namespace VisMe{
    */
   CameraPtr CamCtrlVmbAPI::getSelectedCamera(void){return pSelectedCamera;}
 
+  /*****************************************************************************
+   * Get number of cameras
+   */
+  int CamCtrlVmbAPI::getNumberOfCameras(void){ return m_cameras.size(); }
+  
+
   ///////////////////////////////////////////////////////////////////////////////
   //
   //  APIAPIAPIAPIAPIAPIAPIAPIAPIAPIAPIAPIAPIAPIAPIAPIAPIAPIAPIAPIAPIAPIAPIAPI

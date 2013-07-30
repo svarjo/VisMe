@@ -124,7 +124,6 @@ namespace VisMe{
 	sprintf( windowNameBuffer[camId], "Camera %u", camId ); 
 	cv::namedWindow( windowNameBuffer[camId] , CV_WINDOW_AUTOSIZE );
       }
-
     }
 
     char *pCurrPath;
@@ -202,18 +201,72 @@ namespace VisMe{
     }
   }
 
-  void run_single_capture()
+  /**********************************************************************
+   * Capture just single image from a gicen camera
+   */
+  void run_single_capture( int camId )
   {
-    
-    int numCameras = cameraIds.size();   
-    imgBuffer = new commonImage_t[numCameras]; //size, type, data
-    pathNameBuffer = new char*[numCameras];
-    fileNameBuffer = new char*[numCameras];
+    if (camId > camCtrl->getNumberOfCameras()-1) 
+      return;
 
-    
+    commonImage_t imBuff;
+    char pathBuff[1024];
+    char nameBuff[1024];
+    int c,bpp,cvImageType;
+   
+    camCtrl->getImageSize( &imBuff.width,  &imBuff.height, &c, &bpp );
 
+    if (c==1 && bpp < 9){
+      imBuff.mode = commonImage::Gray8bpp;
+      imBuff.data = (void*)malloc( imBuff.width*imBuff.height*sizeof(char) );
+      cvImageType = CV_8UC1;
+    }
+    else if (c==1 && bpp < 17){
+      imBuff.mode = commonImage::Gray16bpp;
+      imBuff.data = (void*)malloc( imBuff.width*imBuff.height*sizeof(char)*2 );
+      cvImageType = CV_16UC1;
+    }
+    if (!imBuff.data){
+      std::cerr << "run_single_capture:: error allocating memory" << std::endl;
+      return;
+    }
 
+    // Take a single image with a camera    
+    camCtrl->selectCamera(camId);
+    setCameraToSettings( camCtrl, &(experimentSettings.imageStack[0]) );     
+    camCtrl->captureImage( imBuff.data );
+     
+    generateImageDir( camId, pathBuff );
+    int fileNameCount = 0;
+    generateImageName( pathBuff, nameBuff, &fileNameCount );
+  
+    switch(saveSettings.compression){
+
+      case Settings::NO:{
+	commonImage::saveTIFF( nameBuff, &imBuff, commonImage::COMPRESSION_NONE, true); //true = verbose
+	break;
+      }
+      case Settings::LZW:{
+	commonImage::saveTIFF( nameBuff, &imBuff, commonImage::COMPRESSION_LZW, true); 
+	break;
+      }
+      case Settings::ZIP:{
+	commonImage::saveTIFF( nameBuff, &imBuff, commonImage::COMPRESSION_ZIP, true); 
+	break;
+      }
+      case Settings::JPEG:{
+	commonImage::saveTIFF( nameBuff, &imBuff, commonImage::COMPRESSION_JPG, true); 
+	break;
+      }
+      case Settings::PACKBITS:{
+	commonImage::saveTIFF( nameBuff, &imBuff, commonImage::COMPRESSION_PACKBITS, true); 
+	break;
+      }
+    }
+    free(imBuff.data);
+  
   }
+
 
   void run_streaming_view()
   {    

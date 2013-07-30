@@ -1,4 +1,4 @@
-PROJECT_NAME	= CameraControl_AVT_GT1290
+PROJECT_NAME	= CameraControl_AVT
 
 PROJECT_DIR 		= .
 VIMBASDK_DIR		= ./AVT_sdk/Vimba_1_2

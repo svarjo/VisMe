@@ -46,7 +46,7 @@ namespace commonImage{
     COMPRESSION_NONE=1, 
     COMPRESSION_LZW=5,
     COMPRESSION_JPG=7, //OBS not for 16 bit data
-    COMPRESSION_BACKBITS=32773,
+    COMPRESSION_PACKBITS=32773,
     COMPRESSION_ZIP=32946,
     
   }compressionType_e;

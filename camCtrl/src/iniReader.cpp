@@ -104,15 +104,19 @@ namespace VisMe{
       pSet->filenamePrefix = ini.gets( "Saving", "FilenamePrefix", "image%05d");
       pSet->filenameSuffix = ini.gets( "Saving", "FilenameSuffix", ".tiff");
 
-      value = ini.gets( "Saving", "Compress", "NONE" );
-
-      if ( value == "none" )
-	pSet->compression = NO;
-      else if ( value == "LZW" )
+      value = ini.gets( "Saving", "Compress", "ZIP" );
+      
+      if ( value == "LZW" )
 	pSet->compression = LZW;
+      else if ( value == "ZIP" )
+	pSet->compression = ZIP;
       else if ( value == "jpeg" )
 	pSet->compression = JPEG;
-    
+      else if ( value == "packbits" )
+	pSet->compression = PACKBITS;
+      else
+	pSet->compression = NO;
+
     }//end void getSaveSettings(saveSettings_t *pSet, const std::string& p_filename)
 
 

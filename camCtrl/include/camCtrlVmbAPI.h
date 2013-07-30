@@ -50,6 +50,7 @@ namespace VisMe{
    int InitAll(void);
    CameraPtr getSelectedCamera(void);
    
+   int getNumberOfCameras(void);
 
   private:
 
