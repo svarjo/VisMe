@@ -30,6 +30,12 @@ namespace VisMe{
   typedef SP_DECL( USBCamera )          USBCamera_t;
   typedef SP_DECL( Camera )             Camera_t;
 
+  /**
+   * @class CamCtrlVmbAPI
+   * 
+   * A camera controler class for AVT Vimba controlled cameras. Here
+   * the control is limited to cameras using GigE and USB interfaces. 
+   */
   class CamCtrlVmbAPI : public CamCtrlInterface {
 
   public:

@@ -11,6 +11,7 @@ BIN_FILE            = $(PROJECT_NAME)
 BIN_DIR             = bin/$(CONFIG_DIR)
 OBJ_DIR             = obj/$(CONFIG_DIR)
 BIN_PATH            = $(BIN_DIR)/$(BIN_FILE)
+INCLUDE_DIR 	    = $(PROJECT_DIR)/include
 
 all: $(BIN_PATH)
 
@@ -18,7 +19,7 @@ include $(MAKE_INCLUDE_DIR)/VimbaCPP.mk
 include $(MAKE_INCLUDE_DIR)/CopyData.mk
 
 SOURCE_DIR	 = $(PROJECT_DIR)/src
-INCLUDE_DIRS	 = -I$(PROJECT_DIR)/include 
+INCLUDE_DIRS	 = -I$(INCLUDE_DIR)
 
 CFLAGS		+= $(shell pkg-config opencv --cflags)
 LIBS 		+= $(shell pkg-config opencv --libs)
@@ -64,6 +65,7 @@ $(BIN_PATH): $(DEPENDENCIES) $(OBJ_FILES) $(BIN_DIR)
 clean:
 	$(RM) bin -r -f
 	$(RM) obj -r -f
+	$(RM) doc/html -r -f
 
 $(OBJ_DIR):
 	$(MKDIR) -p $(OBJ_DIR)
@@ -71,9 +73,15 @@ $(OBJ_DIR):
 $(BIN_DIR):
 	$(MKDIR) -p $(BIN_DIR)
 
+$(DOC_DIR):
+	$(MKDIR) -p $(DOC_DIR)
 
 edit: 
 	emacs Makefile src/*.cpp include/*.h data/setup.ini &
 
 wc:
 	wc -l src/*.cpp include/*.h data/setup.ini
+
+mydoc: 	
+	doxygen doc/config
+	echo "Documentation created under ./doc/html"
