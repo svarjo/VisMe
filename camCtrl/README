@@ -1,0 +1,27 @@
+# camCtrl software 
+# Instructions
+#
+# For checking and installing dependencies please run as reqular user:
+./chk_AVT_sdk
+#
+# And as root (or sudo): 
+./chk_deps
+#
+#
+# If all dependencies are correlctly set (or corrected in Makefile) one can 
+# build the binary by invoking make. The binary file is created for x86 or x64 
+# depending on the build platform. The resulting binary is located under bin/ 
+# directory.
+make
+#
+# To removes all build files - including the created binary invoke make clean
+#make clean
+#
+#For doxygen generated source documentation (doxygen is not checked as 
+# dependency) please invoke make with mydoc option and the documentation should
+#be created at doc/html. For changing output please modify doc/config settings.
+make mydoc
+
+
+
+

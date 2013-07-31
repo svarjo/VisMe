@@ -1,14 +1,14 @@
 /**
  * @file camCtrlInterface.h
  *
- * @DESCRIPTION
+ * @section DESCRIPTION
  *
  * A pure virtual interface for controlling and capturing using HW cameras.
  * Inherent the class for real implementation of camera controllers.
  *
  * namespace:  VisMe::
  *          
- * @AUTHOR Sami Varjo 2013
+ * @author Sami Varjo 2013
  ********************************************************************************************/
 
 
@@ -17,6 +17,10 @@
 
 namespace VisMe{
 
+  /**
+   * A pure abstract interface class for all camera control implementations. The common
+   * functionalities for camera controllers are defined here. 
+   */
   class CamCtrlInterface{
   
   public:
@@ -78,8 +82,8 @@ namespace VisMe{
      * as the frame size from IP camera).
      * @param width a pointer to storage of image width
      * @param height a pointer to storage of image height
-     * @param channel a pointer to storage of image data channels 
-     * @param bitsperpixel a pointer to storage of number of bits per Pixel
+     * @param channels a pointer to storage of image data channels 
+     * @param bitsPerPixel a pointer to storage of number of bits per Pixel
      */
     virtual void getImageSize( int *width, int *height, int *channels, int *bitsPerPixel)=0;
 

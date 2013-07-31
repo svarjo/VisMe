@@ -32,27 +32,34 @@ namespace VisMe{
 
   typedef struct s_cameraSettings{
 
-    bool autogain;
-    bool autoexposure;
-    bool autowhitebalance;
-    bool autoiris;
-
-    double gamma;
-    double gain;
-    double iris;
-    double exposureTime;
+    bool autogain;            ///Use hardware gain control
+    bool autoexposure;        ///Use hardware exposure time control
+    bool autowhitebalance;    ///Use whitebalance (only RGB cameras - with gray scale this is neglected)
+    bool autoiris;            ///Automatic adjustment of DC/P-Iris
+ 
+    double gamma;             ///Gamma correction value (neglected if auto) 
+    double gain;              ///Sensor gain value (neglected if auto) 
+    double iris;              ///Iris setting (neglected if auto) 
+    double exposureTime;      ///Exposure time in ms (neglected if auto) 
 
   }cameraSettings_t;
 
-  enum experimentMode_t{ IMAGE_STACK_EXPTIME, SINGLE, STREAMING_VIEW, ADAPTIVE, EXTERNAL_SIGNAL, DEBUG_TESTING};
+  enum experimentMode_t{ 
+    IMAGE_STACK_EXPTIME, 
+    SINGLE, 
+    STREAMING_VIEW, 
+    ADAPTIVE, 
+    EXTERNAL_SIGNAL, 
+    DEBUG_TESTING
+  };
 
   typedef struct s_experimentSettings{
     
-    int id;
-    experimentMode_t mode;   
-    double captureInterval;
-    bool preview;
-    std::vector<cameraSettings_t> imageStack;
+    int id;                   ///Experiment unique id (can be set)
+    experimentMode_t mode;    ///Experiment mode as in experimentMode_t (IMAGE_STACK_EXPTIME, SINGLE, TEST,...)
+    double captureInterval;   ///Interval to capture images in seconds. The actual start time will be used
+    bool preview;             ///Show last image captured in a window 
+    std::vector<cameraSettings_t> imageStack; //Settings for multiple captures 
 
   }experimentSettings_t;
 
@@ -61,13 +68,13 @@ namespace VisMe{
   enum imageDirectoryPrefixType_t{ DATETIME, RUNNING, NONE };
 
   typedef struct s_saveSettings{
-    std::string outPath;
-    std::string cameraDirectoryPrefix;
-    imageDirectoryPrefixType_t imageDirectoryPrefixType;
-    std::string imageDirectoryPrefix;
-    std::string filenamePrefix;
-    std::string filenameSuffix;
-    fileCompressionType_t compression;
+    std::string outPath;                                   ///Main folder for data to be saved.
+    std::string cameraDirectoryPrefix;                     ///Each camera controlled will have an own folder.
+    imageDirectoryPrefixType_t imageDirectoryPrefixType;   ///Generation of folder name under the camera folder (DATETIME, RUNNING, NONE). DATETIME names image folder by the current time, RUNNING uses running number. If NONE is set the images are saved directly in the camera folder. 
+    std::string imageDirectoryPrefix;    ///Prefix for the image directories
+    std::string filenamePrefix;          ///Imagefilename prefix with sprintf numbering format. Eg img%05d is accepted and filename will be imgXXXXX.
+    std::string filenameSuffix;          ///Ending of the filename ( eg .tiff)
+    fileCompressionType_t compression;   ///Type of compression to be used. Tiff type compressions available NO, LZW, ZIP, JPEG, PACKBITS.
   }saveSettings_t;
 
   }//end namespace Settings

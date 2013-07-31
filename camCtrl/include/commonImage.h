@@ -1,7 +1,7 @@
 /**
  * @file commonImage.h
  *
- * @DESCRIPTION
+ * @section DESCRIPTION
  *
  * A simple image container/interface to describe data between 3rd party
  * software (eg data from cameraAPI -> own stuff). Several functions are
@@ -17,7 +17,7 @@
  *
  * namespace:  commonImage::
  *
- * @AUTHOR Sami Varjo 2013
+ * @author Sami Varjo 2013
  *
  **************************************************************************/
 
@@ -25,15 +25,18 @@
 #define COMMON_IMAGE_H
 
 namespace commonImage{
-
+  
+  /**
+   * The image sample type, or bits per pixel (bpp).
+   */
   typedef enum mode{ 
-    Gray8bpp,   // Gray == single channel
-    Gray10bpp,
-    Gray12bpp,
-    Gray14bpp,
-    Gray16bpp,
-    RGB8bpp,    // 3 channels 8 bpp (ie total 24 bpp)
-    RGBA8bpp,   // 4 channels 8 bpp 
+    Gray8bpp,   /// single channel 8 bits per pixel
+    Gray10bpp,  /// single channel 10 bits per pixel
+    Gray12bpp,  /// single channel 12 bits per pixel
+    Gray14bpp,  /// single channel 14 bits per pixel
+    Gray16bpp,  /// single channel 16 bits per pixel
+    RGB8bpp,    /// 3 channels 8 bpp (ie total 24 bpp)
+    RGBA8bpp,   /// 4 channels 8 bpp (ie total 32 bpp)
   } mode_e;
 
   /**
