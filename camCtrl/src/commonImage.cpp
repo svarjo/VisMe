@@ -40,7 +40,7 @@ int saveTIFF( const char *path, commonImage_t *image, compressionType_e cType, b
      TIFFSetField( out, TIFFTAG_PLANARCONFIG, 1); //RGBRGBRGB... (or GGGGGG...)
 
      if (image->mode == Gray8bpp || image->mode == Gray10bpp || image->mode == Gray12bpp || 
-	 image->mode == Gray14bpp || image->mode == Gray16bpp ){
+	 image->mode == Gray14bpp || image->mode == Gray16bpp || image->mode == Gray32bpp ){
 
        TIFFSetField( out, TIFFTAG_PHOTOMETRIC, 1);
      }
@@ -58,7 +58,12 @@ int saveTIFF( const char *path, commonImage_t *image, compressionType_e cType, b
      case Gray16bpp:
        bitspersample = 16;
        break;
-       
+     case Gray24bpp:
+       bitspersample = 24;
+       break;
+     case Gray32bpp:
+       bitspersample = 32;
+       break;
      default:
        if (verbose)
 	 std::cerr << "Unsupported image format encountered" << std::endl;
@@ -76,7 +81,6 @@ int saveTIFF( const char *path, commonImage_t *image, compressionType_e cType, b
 
      //////////////////////////////////////////////////////
      //Do the actual data write (buffered to row at once)
-     
      tsize_t linebytes = bitspersample*samplesperpixel*image->width ;
      int fract = linebytes%8;
      linebytes /= 8;
@@ -150,11 +154,13 @@ int readTIFF (const char *path, commonImage_t *image, bool verbose )
 		<< image->width << " bps:" << bps << " spp: " << spp<< std::endl;
     }
 
+    //Note that no bit packing is supported. ie only full bytes are read
     if (bps == 8 && spp == 1)
       image->mode = Gray8bpp;
-    else if (bps > 7  && bps < 17 && spp == 1)
+    else if (bps > 8 && bps < 17 && spp == 1)
       image->mode = Gray16bpp;
-
+    else if (bps > 17 && bps < 33 && spp == 1) //OBS no support for 24bps separately
+      image->mode = Gray32bpp;
     else if (bps == 8 && spp == 3)
       image->mode = RGB8bpp;
     else if (bps == 8 && spp == 4)

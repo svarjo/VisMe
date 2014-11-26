@@ -137,54 +137,67 @@ int main(int argc, char** argv)
     std::cout << "Error while initializing cameras.\nExiting..." << std::endl;
   }
   else{
-    
-    //////////////////////////////////////////////////
-    //make a data directory for each camera
-    for (int i = 0; i<cameraIds.size(); i++)
-      generateCamDir(i+1, buf);  
 
-    switch (experimentSettings.mode) {
-   
-    case IMAGE_STACK_EXPTIME:
-      {
-	run_image_stack_capture();
-	break;
-      }
-    case SINGLE:
-      {
-	int cameraId = 0;
-	run_single_capture( cameraId );
-	break;
-      }
-    case STREAMING_VIEW:
-      {
-	run_streaming_view();
-	break;
-      }
-    case DEBUG_TESTING:
-      {
-	switch (experimentSettings.id) 
-	  {
+		//////////////////////////////////////////////////
+		//make a data directory for each camera
+		for (int i = 0; i < cameraIds.size(); i++)
+			generateCamDir(i + 1, buf);
 
-	  case 0:{
-	    run_debug_filenames(); //OK     
-	    break;
-	  }
-	  case 1:{
-	    run_test_tiff_load( argv[2] );
-	    break;
-	  }
-	  case 2:{
-	    run_test_tiff_saving();
-	    break;
-	  }
-	  default:{
-	    std::cout << "Running [test] but id=" <<  experimentSettings.id << " not implemented" << std::endl;
-	    break;
-	  }
-	}
-      }
-    }
+		switch (experimentSettings.mode) {
+
+		  case IMAGE_STACK_EXPTIME: {
+			  std::cout << "Capturing image stacks for HDR" << std::endl;
+			  run_image_stack_capture();
+			  break;
+		  }
+		  case SINGLE: {
+			  std::cout << "Capturing single image from the first camera (first image stack settings)" << std::endl;
+			  int cameraId = 0;
+			  int exptime = experimentSettings.imageStack[0].exposureTime; //µs
+			  run_single_capture(cameraId, exptime);
+			  break;
+		  }
+		  case ADAPTIVE: {
+			  getAdaptiveSettings(&adaptiveSettings, setupFileName);
+			  std::cout << "Capturing HDR image using adaptive exposure" << std::endl;
+			  run_adaptive_hdr_capture();
+			  break;
+		  }
+		  case STREAMING_VIEW: {
+			  std::cout << "Streaming view started" << std::endl;
+			  run_streaming_view();
+			  break;
+		  }
+		  case EXTERNAL_SIGNAL:{
+			  std::cout << "External signal capture mode" <<std::endl;
+			  run_external_signal_capture();
+			  break;
+		  }
+		  case DEBUG_TESTING: {
+			  std::cout << "Debug test:" << experimentSettings.id << std::endl;
+			switch (experimentSettings.id) {
+
+			case 0: {
+				run_debug_filenames(); //OK
+				break;
+			}
+			case 1: {
+				run_test_tiff_load(argv[2]);
+				break;
+			}
+			case 2: {
+				run_test_tiff_saving();
+				break;
+			}
+			default: {
+				std::cout << "Running [test] but id=" << experimentSettings.id
+						<< " not implemented" << std::endl;
+				break;
+			}
+		  }
+		  break;
+		}
+	 }
   }
 
   cleanExit("Done");

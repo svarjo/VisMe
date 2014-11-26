@@ -13,6 +13,8 @@
 
 #include "camCtrlVmbAPI.h"
 #include "experiments.h"
+#include "GT1290Camera.h"
+
 
 namespace VisMe{
   
@@ -40,7 +42,10 @@ namespace VisMe{
     Vimba.Shutdown();
   }
 
-
+  /**
+   * First thing to do with the cam controller. Initializes Vimba-system and assigns
+   *  the camera factory for the sytem.
+   */
   void CamCtrlVmbAPI::initVimba(void)
   {
     err = Vimba.Startup();
@@ -88,12 +93,13 @@ namespace VisMe{
    
     populateMyCameraVector(allCameras);
 
-    if (!m_cameras.empty()){
-      selectCamera(0);      
+    if ( !m_cameras.empty() ){
+
       for (int i = 0; i<m_cameras.size(); i++){
-	std::string strID;
-	m_cameras[i]->GetID(strID);
-	cameraIds.push_back(strID);
+    	  selectCamera(i);
+    	  std::string strID;
+    	  m_cameras[i]->GetID(strID);
+    	  cameraIds.push_back(strID);
       }
     }
     else{
@@ -101,21 +107,17 @@ namespace VisMe{
       return -1;
     }
 
-
-    
-    int ok = openGrayModeCameras();
-
-    return ok;
+    return 0;
   }
 
   /*********************************************************************************
-   * Open the cameras and set the pixel format to gray 14 bbp (or fall back to 12,10
+   * Set the pixel format to gray 14 bbp (or fall back to 12,10
    * or 8 bits per pixel if not successful at 14 bbp)
-   * Also populate m_payloadSize[id] array containging the size of captured frame for
+   * Also populate m_payloadSize[id] array containing the size of captured frame for
    * each camera in m_cameras vector. In addition FramePtrVector array is created for 
    * cameras at m_frames[id] 
    */
-  int CamCtrlVmbAPI::openGrayModeCameras(void)
+  int CamCtrlVmbAPI::setupGrayModeCameras(void)
   {
     m_payloadSize = new VmbInt64_t[m_cameras.size()];
     
@@ -123,56 +125,73 @@ namespace VisMe{
     //    for ( CameraPtrVector::iterator iter = m_cameras.begin(); m_cameras.end() != iter;  iter++)
     for ( int id = 0; id < m_cameras.size(); id++)
       {
-	std::string strID;
-	m_cameras[id]->GetID(strID);
-
-	err = m_cameras[id]->Open( VmbAccessModeFull ); //Now camera should be open and usable.
+    	//ALREADY OPEN CAMERAS EXPECTED!
+    	std::string strID;
+    	m_cameras[id]->GetID(strID);
+    	//VmbAccessModeType allowedAccessType;
+    	//m_cameras[id]->GetPermittedAccess( allowedAccessType );
+    	//std::cout << "DBG::Trying to open camera " << strID << " using " << allowedAccessType << std::endl;
+    	//std::cout << "DBG::Trying to open camera " << strID << " using " << VmbAccessModeFull << std::endl;
+    	//err = m_cameras[id]->Open( allowedAccessType ); //Now camera should be open and usable.
+    	//err = m_cameras[id]->Open( VmbAccessModeFull ); //Now camera should be open and usable.
+    	//if (err != VmbErrorSuccess ){
+    	//	std::cerr << "camCtrlVmbAPI::Init - could not open camera " << strID <<  " err: " << err << std::endl;
+    	//	return(-3);
+    	//}
 	
-	if (err != VmbErrorSuccess ){
-	  std::cerr << "camCtrlVmbAPI::Init - could not open camera " << strID <<  " err: " << err << std::endl;
-	  return(-3);
+    	FeaturePtr feature;
+    	VmbInt64_t value;
+
+		err = m_cameras[id]->GetFeatureByName("PixelFormat", feature);
+		if (err != VmbErrorSuccess) {
+			std::cerr
+					<< "camCtrlVmbAPI::Init - could not get pixelFormat feature"
+					<< std::endl;
+		}
+
+		//Try to set as high precision Mono as possible
+		err = feature->SetValue(VmbPixelFormatMono14);
+		if (err != VmbErrorSuccess) {
+			err = feature->SetValue(VmbPixelFormatMono12);
+			if (err != VmbErrorSuccess) {
+				err = feature->SetValue(VmbPixelFormatMono10);
+				if (err != VmbErrorSuccess) {
+					err = feature->SetValue(VmbPixelFormatMono8);
+					if (err != VmbErrorSuccess) {
+						std::cerr
+								<< "Could not set camera pixel format to gray (mono8-mono16)"
+								<< std::endl;
+					} else {
+						std::cout << "\tgray 8 bpp camera set" << std::endl;
+					}
+				} else {
+					std::cout << "\tgray 10 bpp camera set" << std::endl;
+				}
+			} else {
+				std::cout << "\tgray 12 bpp camera set" << std::endl;
+			}
+		} else {
+			std::cout << "\tgray 14 bpp camera set" << std::endl;
+		}
+
+		err = m_cameras[id]->GetFeatureByName("PayloadSize", feature); //Required when aquiring frames
+		if (err != VmbErrorSuccess) {
+			std::cerr << "camCtrlVmbAPI::Init - payloadSize not received from "
+					<< strID << " err: " << err << std::endl;
+			return (-3);
+		}
+		feature->GetValue(value);
+		m_payloadSize[id] = value;
 	}
-	
-	FeaturePtr feature;
-	VmbInt64_t value;
 
-	err = m_cameras[id]->GetFeatureByName( "PixelFormat", feature);
-	if (err != VmbErrorSuccess){
-	  std::cerr << "camCtrlVmbAPI::Init - could not get pixelFormat feature" << std::endl;
-	}
-
-	//Try to set as high precision Mono as possible
-	err = feature->SetValue( VmbPixelFormatMono14 );
-	if (err != VmbErrorSuccess ){ 
-	  err = feature->SetValue( VmbPixelFormatMono12 );
-	  if (err != VmbErrorSuccess ){ 
-	    err = feature->SetValue( VmbPixelFormatMono10 );
-	    if (err != VmbErrorSuccess ){ 
-	      err = feature->SetValue( VmbPixelFormatMono8 );
-	      if (err != VmbErrorSuccess ){ 
-		std::cerr << "Could not set camera pixel format to gray (mono8-mono16)" << std::endl;
-	      } else{ std::cout << "\tgray 8 bpp camera set" << std::endl; }
-	    } else{ std::cout << "\tgray 10 bpp camera set" << std::endl; }
-	  } else{ std::cout << "\tgray 12 bpp camera set" << std::endl; }
-	} else{ std::cout << "\tgray 14 bpp camera set" << std::endl; }
-
-	err = m_cameras[id]->GetFeatureByName( "PayloadSize", feature); //Required when aquiring frames
-	if (err != VmbErrorSuccess ){
-	  std::cerr << "camCtrlVmbAPI::Init - payloadSize not received from " << strID <<  " err: " << err << std::endl;
-	  return(-3);
-	}	
-	feature->GetValue( value );
-	m_payloadSize[id]=value;	
-      }
-
-    m_frames = new FramePtrVector[m_cameras.size()];
-    return 0;
+	m_frames = new FramePtrVector[m_cameras.size()];
+	return 0;
   }
 
   /********************************************************************
    * Go through the camera vector containing N cameras and populate
    * m_cameras vector with GigE and USB cameras. Open them and set the
-   * initial mode to 
+   * initial mode to gray...
    */
   void CamCtrlVmbAPI:: populateMyCameraVector(CameraPtrVector allCameras){
 
@@ -228,13 +247,64 @@ namespace VisMe{
 	  strInfo = "none";
 	  switch( interfaceType )
 	    {
+
 	    case VmbInterfaceEthernet: 
 	      {
+	    	  GT1290Camera_t gcam = SP_DYN_CAST( *iter, GT1290Camera );
+	    	  if(gcam != NULL) {
+	    		  m_cameras.push_back(gcam);
+	    	  }
+
+	          // Set the GeV packet size to the highest possible value
+	          FeaturePtr pCommandFeature;
+	          if ( VmbErrorSuccess == gcam->GetFeatureByName( "GVSPAdjustPacketSize", pCommandFeature ))
+	          {
+	              if ( VmbErrorSuccess == pCommandFeature->RunCommand() )
+	              {
+	                  bool bIsCommandDone = false;
+	                  do
+	                  {
+	                      if ( VmbErrorSuccess != pCommandFeature->IsCommandDone( bIsCommandDone ))
+	                      {
+	                          break;
+	                      }
+	                  } while ( false == bIsCommandDone );
+	              }
+	          }else{
+	        	  cleanExit("Could not auto adjust GigE camera packet size!");
+	          }
+
+
+
+	    	  /*
+	    	  FeaturePtr pFeature;
+	    	  err = gcam->GetFeatureByName( "StreamBytesPerSecond", pFeature);
+              if ( VmbErrorSuccess == err )
+              {
+                  VmbInt64_t nMin, nMax, nValue;
+                  double rfBandwidth;
+
+                  err = pFeature->GetValue( nValue );
+                  if ( VmbErrorSuccess == err ) {
+
+                	  err = pFeature->GetRange( nMin, nMax );
+					  if ( VmbErrorSuccess == err )
+					  {
+						  rfBandwidth = (double)nValue / nMax;
+
+						  //nValue = (VmbUint64_t)(rfBandwidth * nMax);
+						  //err = pFeature->SetValue( nValue );
+					  }
+                  }
+              }
+              */
+	    /*
 		GigECamera_t gcam = SP_DYN_CAST( *iter, GigECamera );
 		if(gcam != NULL){
 		  gcam->addonGigE(strInfo);
 		  m_cameras.push_back(gcam);
 		}
+		*/
 		break;
 	      }
 	    case VmbInterfaceUsb: 
@@ -243,9 +313,11 @@ namespace VisMe{
 		if(ucam != NULL){
 		  ucam->addonUSB(strInfo);
 		  m_cameras.push_back(ucam);
+		  std::cout << "Added camera:"<<std::endl;
 		}
 		break;
-	      }
+	    }
+
 	    default:
 	      {
 		std::cerr << "Unsupported camera type encountered" << std::endl;
@@ -253,17 +325,19 @@ namespace VisMe{
 	      }
 	    }
 	}
-                    
 
-      std::cout << "/// Camera Name: " << strName <<	   \
-	std::endl << "/// Model Name: " << strModelname <<	 \
+    std::cout << "/// Camera Name: " << strName <<	   \
+    std::endl << "/// Model Name: " << strModelname <<	 \
 	std::endl << "/// Camera ID: " << strID <<		 \
 	std::endl << "/// Serial Number: " << strSerialNumber << \
 	std::endl << "/// @ Interface ID: " << strInterfaceID << \
 	std::endl << std::endl;
-	
-      //TODO populate struct for each camera...
 
+    }
+
+    //Set defaults and populate other essentials
+    if ( setupGrayModeCameras() != 0){
+    	cleanExit("Error while setting up gray mode for cameras");
     }
 
     std::cout << "\nFound " << m_cameras.size() << " AVT Vimba camera(s) " << std::endl;
@@ -272,6 +346,7 @@ namespace VisMe{
 
   /*********************************************************************************
    * Use a list (std::vector<std::string>) of camera ids to initialize cameras
+   * The cameras in IDlist are opened
    */
   int CamCtrlVmbAPI::InitByIds( std::vector<std::string> IDlist )
   {
@@ -308,7 +383,11 @@ namespace VisMe{
       return -1;
     }
         
-    int ok = openGrayModeCameras();
+
+    std::cout << "Cameras in CameraVector: " << m_cameras.size() << std::endl;
+
+    int ok = 0;
+    //    int ok = openGrayModeCameras();
 
     return ok;
   }
@@ -322,14 +401,11 @@ namespace VisMe{
   {
 
     if (!m_cameras.empty()){
-      m_cameras.clear(); //Camera destructor implicitly closes the camera beforehand
+    	for (int camId = 0; camId < m_cameras.size(); camId++ ){
+    		m_cameras[camId]->Close();
+    	}
+      m_cameras.clear(); //Camera destructor implicitly should close the camera
     }
-
-    if (m_payloadSize != NULL)
-      delete m_payloadSize;
-
-    if (m_frames != NULL)
-      delete m_frames;
 
   }
 
@@ -379,7 +455,7 @@ namespace VisMe{
   /*****************************************************************************/
 
   /*****************************************************************************
-   * Select the active camera by enumeration id (int)
+   * Select the active camera by enumeration id (int) 0 - (Ncams-1)
    */
   void CamCtrlVmbAPI::selectCamera( int id )
   {
@@ -394,21 +470,66 @@ namespace VisMe{
    * Send request to capture an image from selected camera at FramePter pFrame
    * Synchronous action (ie blocking call)
    */
-void CamCtrlVmbAPI::captureImage( void *buffer  )
+int CamCtrlVmbAPI::captureImage( void *buffer  )
 {
-  if (buffer == NULL)
-    return;
-    
-  Frame newFrame( (VmbUchar_t *)(buffer), m_payloadSize[m_selectedCameraId] );
-  FramePtr pF;
-  SP_SET(pF, &newFrame);
 
-  err = pSelectedCamera->AcquireSingleImage( pF, 1500 );
-  
+	if (buffer == NULL)
+		return -1;
+
+	//Why I cannot pass own buffer to capture Image
+	//std::cout << "CaptureImage - payoload: " << m_payloadSize[m_selectedCameraId] << std::endl;
+  	//Frame newFrame( (VmbUchar_t *)(buffer), m_payloadSize[m_selectedCameraId] );
+  	//FramePtr pOwnBuff;
+  	//SP_SET(pOwnBuff, &newFrame);
+
+
+	//WORKS:
+	FramePtr pF; //!? auto pointer only - mem allocated automagically? - how to use own buff?
+
+	std::string sCamModel;
+	err = pSelectedCamera->GetModel(sCamModel);
+
+	if (err != VmbErrorSuccess) {
+		std::cerr << "Selected camera not found!" << std::endl;
+		return err;
+	}
+
+	//Implement setParameter for GT1290 gray
+	if (sCamModel.compare(0, 6, "GT1290") == 0) {
+
+		GT1290Camera_t cam = SP_DYN_CAST( pSelectedCamera, GT1290Camera );
+		err = cam->SetAcquisitionMode(GT1290Camera::AcquisitionMode_SingleFrame);
+
+		if (err == VmbErrorSuccess){
+			err = cam->AcquisitionStart();
+			if (err == VmbErrorSuccess){
+				double val;
+				cam->GetExposureTimeAbs( val );
+				int timeOut = 2000+(val/1000);  //Wait for frame exposure time + 1000 ms (50 ms skips many frames)
+				err = cam->AcquireSingleImage( pF, timeOut);
+			}
+		}
+		else{
+			std::cerr << "Error while capturing single image. Error:" << err <<std::endl;
+			std::cerr << "TODO find out problem - Quiting " << std::endl;
+			exit( err );
+			//return err;
+		}
+
+
+	}
+	else{
+		std::cerr << "captureImage :: unsupported camera model" << std::endl;
+		return err;
+
+	}
+
   if ( err == VmbErrorSuccess ) {
     // See if frame is not corrupt
     VmbFrameStatusType eReceiveStatus;
     err = pF->GetReceiveStatus( eReceiveStatus );
+
+    //WORKS:
     if (    VmbErrorSuccess == err && VmbFrameStatusComplete == eReceiveStatus ){
 
       VmbUint32_t buffSize;
@@ -419,8 +540,15 @@ void CamCtrlVmbAPI::captureImage( void *buffer  )
 	
       memcpy(buffer, pIn, buffSize);
 
-    }	
+      return 0;
+    }
+
+    else
+    	std::cerr << "Frame skipped" << std::endl;
+    	return -2;
+
   }
+
 }
 
 
@@ -462,56 +590,140 @@ void CamCtrlVmbAPI::captureImageAsyc( void )
 
 }
   */
+void CamCtrlVmbAPI::stopCapture( void ) {
+	pSelectedCamera->EndCapture();
+	//pSelectedCamera->StopContinuousImageAcquisition();
+};
 
-
-void CamCtrlVmbAPI::captureStream( void )
+void CamCtrlVmbAPI::captureStream( void  )
 {
-  std::cout << "captureStream Stub  *IMPLEMENTATION MISSING*" << std::endl;
+	//STUB DUMMY
+	std::cout << "captureStream Implementation missing TODO" << std::endl;
+/*
+	GT1290Camera::AcquisitionModeEnum val = GT1290Camera::AcquisitionMode_Continuous;
+	camCtrl->setParameter(CamCtrlInterface::PARAM_ACQUISITION_MODE,(void*)(&val), sizeof(bool));
+	pSelectedCamera->StartCapture();
+*/
+/*
+	FrameObserver myObs(pSelectedCamera);
+	AVT::VmbAPI::shared_ptr<FrameObserver> pFO;
+	SP_SET(pFO,&myObs);
+	pSelectedCamera->StartContinuousImageAcquisition(2, pFO);
+*/
 }
   
-void CamCtrlVmbAPI::setParameter( camParam_t parameter, void *value, int valueByteSize)
-{
-  
-  std::cout << "CamCtrlVmbAPI::setParameter stub *IMPLEMENTATION MISSING*" << std::endl;
 
-  switch (parameter){
-  case PARAM_GAIN_AUTO:
+void CamCtrlVmbAPI::setParameter(camParam_t parameter, void *value,	int valueByteSize) {
 
-    break;
+	std::string sCamModel;
+	err = pSelectedCamera->GetModel(sCamModel);
 
-  case PARAM_EXPTIME_AUTO:
+	if (err != VmbErrorSuccess) {
+		std::cerr << "Selected camera not found!" << std::endl;
+		return;
+	}
 
-    break;
+	//Implement setParameter for GT1290 gray
+	if (sCamModel.compare(0, 6, "GT1290") == 0) {
 
-  case  PARAM_WHITEBALANCE_AUTO:
+		GT1290Camera_t cam = SP_DYN_CAST( pSelectedCamera, GT1290Camera );
 
-    break;
+		//std::cout << "setting parameter for " << sCamModel << std::endl;
 
-  case PARAM_IRIS_AUTO:
+		switch (parameter) {
+		case PARAM_GAIN_AUTO:{
 
-    break;
+			bool setVal = *((bool*) (value));
+			if (setVal){
+				err = cam->SetGainAuto(GT1290Camera::GainAuto_Continuous);
+			}else{
+				err = cam->SetGainAuto(GT1290Camera::GainAuto_Off);
+			}
+			break;
+		}
+		case PARAM_EXPTIME_AUTO:{
 
-  case PARAM_GAMMA_VALUE:
+			//OBS! Auto Appears to work only with continuous mode...
+			bool setVal = *((bool*)(value));
+			if (setVal){
+				err=cam->SetExposureAuto(GT1290Camera::ExposureAuto_Continuous);
+				//std::cout << "Set ExposureAuto_Continuous" << std::endl;
+			}
+			else{
+				err=cam->SetExposureAuto(GT1290Camera::ExposureAuto_Off);
+				//std::cout << "Set ExposureAuto_Off" << std::endl;
+			}
 
-    break;
+			break;
+		}
+		case PARAM_WHITEBALANCE_AUTO:{
+			//Gray camera - nothing to do
+			break;
+		}
+		case PARAM_IRIS_AUTO:{
 
-  case PARAM_GAIN_VALUE:
+			bool setVal = *((bool*) (value));
+			if (setVal)
+				err = cam->SetIrisMode(GT1290Camera::IrisMode_PIrisAuto);
+			else
+				err = cam->SetIrisMode(GT1290Camera::IrisMode_Disabled);
+			break;
+		}
+		case PARAM_GAMMA_VALUE:{
 
-    break;
+			double setVal = *((double*) (value));
+			err = cam->SetGamma(setVal);
+			break;
+		}
+		case PARAM_GAIN_VALUE:{
 
-  case PARAM_IRIS_VALUE:
+			err = cam->SetGainAuto(GT1290Camera::GainAuto_Off);
 
-    break;
+			double setVal = *((double*) (value));
+			err = cam->SetGain(setVal);
 
-  case PARAM_EXPTIME_VALUE:
+			break;
+		}
+		case PARAM_IRIS_VALUE:{
+			err = cam->SetIrisMode(GT1290Camera::IrisMode_PIrisManual);
+			double dVal =  *((double*) (value)) ; //Note rounding to int
+			err = cam->SetIrisAutoTarget((VmbInt64_t)(dVal+0.5));
+			break;
+		}
+		case PARAM_EXPTIME_VALUE:{
 
-    break;
+			double setVal = (*((double*) (value)));
+			err = cam->SetExposureTimeAbs (setVal);
+			break;
+		}
+		case PARAM_EXPTIME_ONCE:{
+			err = cam->SetExposureAuto(GT1290Camera::ExposureAuto_Once);
+			std::cout << "Set ExposureAuto_Once" << std::endl;
+			break;
+		}
 
-  default:
-    std::cerr << "camCtrlVmbAPI - unsupported parameter encountered: " << parameter << std::endl;
-    break;
+		case PARAM_ACQUISITION_MODE:{
+			GT1290Camera::AcquisitionModeEnum val = (*(GT1290Camera::AcquisitionModeEnum*)(value));
+			err = cam->SetAcquisitionMode(val);
+			break;
+		}
+		default:{
+			std::cerr << "camCtrlVmbAPI - unsupported parameter encountered: "
+					<< parameter << std::endl;
+			break;
+		}
+	  }
+	  if (err != VmbErrorSuccess) {
+			std::cerr << "setParameter::Error while setting parameter "	<< parameter << std::endl;
+	  }
 
-  }
+
+	} else {
+		std::cout
+				<< "CamCtrlVmbAPI::setParameter *IMPLEMENTATION MISSING* - unsupported camera model"
+				<< std::endl;
+		return;
+	}
 
 }
 
@@ -523,15 +735,16 @@ void CamCtrlVmbAPI::setParameter( camParam_t parameter, void *value, int valueBy
    */  
   void CamCtrlVmbAPI::setCameraToSettings ( Settings::cameraSettings_t *p_CamSet )
   {
-    setParameter( CamCtrlInterface::PARAM_GAIN_AUTO,     (void*)&p_CamSet->autogain,     sizeof(bool) );
-    setParameter( CamCtrlInterface::PARAM_EXPTIME_AUTO,  (void*)&p_CamSet->autoexposure, sizeof(bool) );
-    setParameter( CamCtrlInterface::PARAM_WHITEBALANCE_AUTO, (void*)&p_CamSet->autowhitebalance, sizeof(bool) );
-    setParameter( CamCtrlInterface::PARAM_IRIS_AUTO,     (void*)&p_CamSet->autoiris, sizeof(bool) );
 
-    setParameter( CamCtrlInterface::PARAM_GAMMA_VALUE,   (void*)&p_CamSet->gamma, sizeof(double) );
-    setParameter( CamCtrlInterface::PARAM_GAIN_VALUE,    (void*)&p_CamSet->gain, sizeof(double) );
-    setParameter( CamCtrlInterface::PARAM_IRIS_VALUE,    (void*)&p_CamSet->iris, sizeof(double) );
-    setParameter( CamCtrlInterface::PARAM_EXPTIME_VALUE, (void*)&p_CamSet->exposureTime, sizeof(double) );
+	setParameter(CamCtrlInterface::PARAM_GAMMA_VALUE, (void*) &p_CamSet->gamma, sizeof(double));
+	setParameter(CamCtrlInterface::PARAM_GAIN_VALUE, (void*) &p_CamSet->gain, sizeof(double));
+	setParameter(CamCtrlInterface::PARAM_IRIS_VALUE, (void*) &p_CamSet->iris, sizeof(double));
+	setParameter(CamCtrlInterface::PARAM_EXPTIME_VALUE,	(void*) &p_CamSet->exposureTime, sizeof(double));
+
+	setParameter(CamCtrlInterface::PARAM_GAIN_AUTO, (void*) &p_CamSet->autogain, sizeof(bool));
+	setParameter(CamCtrlInterface::PARAM_EXPTIME_AUTO, (void*) &p_CamSet->autoexposure, sizeof(bool));
+	setParameter(CamCtrlInterface::PARAM_WHITEBALANCE_AUTO, (void*) &p_CamSet->autowhitebalance, sizeof(bool));
+	setParameter(CamCtrlInterface::PARAM_IRIS_AUTO, (void*) &p_CamSet->autoiris, sizeof(bool));
 
   }
 
@@ -676,6 +889,7 @@ CameraPtr UserCameraFactory::CreateCamera(  const char *pCameraID,
   // create camera class, depending on camera interface type
   if(VmbInterfaceEthernet == interfaceType)
     {
+	  /*
       return GigECamera_t( new GigECamera(pCameraID, 
 					  pCameraName, 
 					  pCameraModel, 
@@ -685,6 +899,19 @@ CameraPtr UserCameraFactory::CreateCamera(  const char *pCameraID,
 					  pInterfaceName, 
 					  pInterfaceSerialNumber, 
 					  interfacePermittedAccess));
+      */
+
+      return GT1290Camera_t( new GT1290Camera(  pCameraID,
+			  	  	  	  	  	  	  	  	  pCameraName,
+			  	  	  	  	  	  	  	  	  pCameraModel,
+			  	  	  	  	  	  	  	  	  pCameraSerialNumber,
+			  	  	  	  	  	  	  	  	  pInterfaceID,
+			  	  	  	  	  	  	  	  	  interfaceType,
+			  	  	  	  	  	  	  	  	  pInterfaceName,
+			  	  	  	  	  	  	  	  	  pInterfaceSerialNumber,
+			  	  	  	  	  	  	  	  	  interfacePermittedAccess));
+
+
     }
   else if(VmbInterfaceUsb == interfaceType)
     {

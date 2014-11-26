@@ -60,8 +60,18 @@ namespace VisMe{
     double captureInterval;   ///Interval to capture images in seconds. The actual start time will be used
     bool preview;             ///Show last image captured in a window 
     std::vector<cameraSettings_t> imageStack; //Settings for multiple captures 
+    bool saveSumImage; 		  ///save sum image (eg with image stack )
+    bool saveStackImages; 	  ///save sum image (eg with image stack )
 
   }experimentSettings_t;
+
+  typedef struct s_adaptiveSettings{
+	  int maxExpTime;  		//#Maximum exposure time for each image slice (µs)
+	  int minExpTime;	 		//#Minumum exposure time (from HW GT1290 15µs)
+	  int expTargetMeanValue; 	//#Mean average image for exporsure adjustment
+	  double expTimeFraction; 	 	   //#auto exposure solved is divided by this value for HDR excess light capture
+	  double integrationTargetMean;    //#integrate until mean reaches
+  }adaptiveSettings_t;
 
   enum fileCompressionType_t{ NO, LZW, ZIP, JPEG, PACKBITS };
 

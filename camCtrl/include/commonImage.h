@@ -29,12 +29,14 @@ namespace commonImage{
   /**
    * The image sample type, or bits per pixel (bpp).
    */
-  typedef enum mode{ 
+  typedef enum _mode{
     Gray8bpp,   /// single channel 8 bits per pixel
     Gray10bpp,  /// single channel 10 bits per pixel
     Gray12bpp,  /// single channel 12 bits per pixel
     Gray14bpp,  /// single channel 14 bits per pixel
     Gray16bpp,  /// single channel 16 bits per pixel
+    Gray24bpp,  /// single channel 24 bits per pixel
+    Gray32bpp,  /// single channel 32 bits per pixel
     RGB8bpp,    /// 3 channels 8 bpp (ie total 24 bpp)
     RGBA8bpp,   /// 4 channels 8 bpp (ie total 32 bpp)
   } mode_e;
@@ -42,7 +44,7 @@ namespace commonImage{
   /**
    * The image container structure 
    */
-  typedef struct commonImage{
+  typedef struct _commonImage{
     mode_e mode;    ///Mode describing the color structure of the data bpp = bits per pixel
     int width;      ///the image width 
     int height;     ///the image height
@@ -52,7 +54,7 @@ namespace commonImage{
   /**
    * The supported image compression modes (as in tiff specification)
    */
-  typedef enum compressionType{ 
+  typedef enum _compressionType{
     COMPRESSION_NONE=1,  ///no compression 
     COMPRESSION_LZW=5,   ///Lempel-Ziv-Welch (lossless)
     COMPRESSION_JPG=7,   ///Joint Photographic Experts Group lossy file format. Note that do not work for 16 bit data.

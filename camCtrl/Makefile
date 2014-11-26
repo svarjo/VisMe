@@ -22,12 +22,19 @@ SOURCE_DIR	 = $(PROJECT_DIR)/src
 INCLUDE_DIRS	 = -I$(INCLUDE_DIR)
 
 CFLAGS		+= $(shell pkg-config opencv --cflags)
-LIBS 		+= $(shell pkg-config opencv --libs)
 
 LIBS 		+= -ltiff
 LIBS		+= $(VIMBACPP_LIBS) 
 
-DEFINES		=
+DEFINES 	= 
+
+BUILD_WITH_GUI = 1
+
+ifeq ($(BUILD_WITH_GUI),1)
+DEFINES		+= -DCOMPILE_WITH_GUI=1
+LIBS 		+= -lopencv_core  -lopencv_highgui
+endif
+
 CFLAGS		= $(COMMON_CFLAGS) \
 		  $(VIMBACPP_CFLAGS)
 
@@ -38,23 +45,12 @@ OBJ_FILES	= $(OBJ_DIR)/main.o \
 		  $(OBJ_DIR)/experiments.o\
 		  $(OBJ_DIR)/fileIO.o\
 		  $(OBJ_DIR)/commonImage.o\
-#		  $(OBJ_DIR)/settings.o
-#		  $(OBJ_DIR)/FrameObserver.o
+		  $(OBJ_DIR)/GT1290Camera.o
+
 
 
 DEPENDENCIES	= VimbaCPP CopySettings
 
-SOURCES	= 	$(SRCDIR)/main.cpp \
-		$(SRCDIR)/camCtrl.cpp\
-		$(SRCDIR)/minIni.cpp \
-		$(SRCDIR)/iniReader.cpp\
-		$(SRCDIR)/experiments.cpp\
-		$(SRCDIR)/fileIO.cpp\
-		$(SRCDIR)/commonImage.cpp\
-#		$(SRCDIR)/settings.cpp
-#		$(SRCDIR)/FrameObserver.cpp
-
-#OBJECTS=$(OBJ_DIR)/$(SOURCES:.cpp.c=.o) 
 
 $(OBJ_DIR)/%.o: $(SOURCE_DIR)/%.cpp $(OBJ_DIR) 
 	$(CXX) -c $(INCLUDE_DIRS) $(DEFINES) $(CFLAGS) -m$(WORDSIZE) -o $@ $<
@@ -85,3 +81,6 @@ wc:
 mydoc: 	
 	doxygen doc/config
 	echo "Documentation created under ./doc/html"
+
+vv:
+	AVT_sdk/Vimba_1_2/VimbaCPP/Examples/Bin/x86_64bit/VimbaViewer &

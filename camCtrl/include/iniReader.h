@@ -24,6 +24,8 @@ namespace VisMe{
     void getSaveSettings(saveSettings_t *pSet, const std::string& p_filename);
     void getExperimentSettings(experimentSettings_t *pSet, const std::string& p_filename);
 
+    void getAdaptiveSettings(adaptiveSettings_t *pSet, const std::string& p_filename);
+
   }
 }
 

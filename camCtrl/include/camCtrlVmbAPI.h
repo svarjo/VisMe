@@ -16,19 +16,23 @@
 
 #include "settings.h"
 #include "camCtrlInterface.h"
+#include "GT1290Camera.h"
 
 using namespace AVT::VmbAPI;
 
 namespace VisMe{
-  
+
   class UserCameraFactory;
   class GigECamera;
   class USBCamera;
 
-  typedef SP_DECL( UserCameraFactory )  UserCameraFactory_t;  
-  typedef SP_DECL( GigECamera )         GigECamera_t;
+  typedef SP_DECL( UserCameraFactory )  UserCameraFactory_t;
+  typedef SP_DECL( GT1290Camera ) 		GT1290Camera_t;
+  //typedef SP_DECL( GigECamera )         GigECamera_t;
   typedef SP_DECL( USBCamera )          USBCamera_t;
+
   typedef SP_DECL( Camera )             Camera_t;
+
 
   /**
    * @class CamCtrlVmbAPI
@@ -47,8 +51,8 @@ namespace VisMe{
    void selectCamera( int id );
    void selectCamera( const char *pStrId );
 
-   void captureImage( void* buffer = NULL ) ;
-   void captureStream( void ) ;
+   int captureImage( void* buffer = NULL ) ;
+   void captureStream(  void ) ;
    
    void setParameter( camParam_t parameter, void *value, int valueByteSize );
    void getImageSize( int *width, int *height, int *channels, int *bitsPerPixel );
@@ -57,6 +61,8 @@ namespace VisMe{
    void freeCameras( void );
 
    //Own interfaces
+   void stopCapture( void );
+
 
    /**
     * Initialize class and try to find all possible cameras using GigE or USB interfaces
@@ -87,7 +93,7 @@ namespace VisMe{
    
    void initVimba(void);
    void populateMyCameraVector(CameraPtrVector allCameras);
-   int  openGrayModeCameras(void);
+   int  setupGrayModeCameras(void);
 
    VimbaSystem &Vimba; //Note reference! 
 
@@ -106,7 +112,8 @@ namespace VisMe{
 
 
 /*=============================================================================*/
-class GigECamera: 
+
+  class GigECamera:
  public Camera
 {
 public:
@@ -140,7 +147,7 @@ public:
     
     void addonUSB( std::string &info );     // custom camera function
 };  
- 
+
 /*======*/
 
 class UserCameraFactory :

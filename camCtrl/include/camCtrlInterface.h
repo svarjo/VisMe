@@ -37,6 +37,10 @@ namespace VisMe{
       PARAM_IRIS_VALUE,
       PARAM_EXPTIME_VALUE, 
 
+      PARAM_EXPTIME_ONCE,
+
+      PARAM_ACQUISITION_MODE,
+
     };
 
     /**
@@ -61,10 +65,10 @@ namespace VisMe{
      * Capture a single image 
      * @param buffer a preallocated buffer for the image data
      */
-    virtual void captureImage( void *buffer ) = 0;
+    virtual int captureImage( void *buffer ) = 0;
 
     /**
-     * Capture a stream
+     * Start capture a stream
      */
     virtual void captureStream( void ) = 0;
 
