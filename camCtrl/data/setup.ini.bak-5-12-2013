@@ -1,0 +1,51 @@
+[Interface]
+NumberOfCameras=1
+Mode=ImageStackExpTime		#ImageStackExpTime|single|adaptive|streaming_view  #for debug: test, single
+#Mode=adaptive			#externalSignal
+CaptureInterval=600	#seconds
+ShowPreview=true    #obs if capture interval is too short - nothing may be shown
+CamID1 = 169.254.100.100
+#CamID2 = 169.254.100.101
+#CamID3 = 169.254.100.102
+
+[Saving]
+Path=./visibilityData_stack_2xtime_17/
+CameraDirectoryPrefix=cam    	    #will be extended with camera id
+ImageDirectoryPrefixType=datetime   #datetime|running|none
+FilenamePrefix= img%05d			    #%05d is prefilled to 5 figures and zeros (d is filled)
+FilenameSuffix=.tif
+Compress=LZW
+
+[Iris]
+Auto=true # true|false #if true - adjusted to target "Value" dynamically if false p-iris is disabled
+Value=75   # range 0-100 ( 100 open)
+
+[Sensor]
+Gain=1.0
+Gamma=1.0
+ExposureTime=250  #ms
+AutoExposure=false
+AutoGain=false
+Whitebalance=false
+
+[ImageStackExpTime]
+NumberOfImages=22
+ExposureTimes=25 50 100 200 400 800 1600 3200 6400 12800 25600 51200 102400 204800 409600 819200 1638400 3276800 6553600 13107200 26214400 52428800 
+#ExposureTimes=25 50 100 300 900 2700 8100 24300 72900 218700 656100 1968300 5904900 11809800 23619600 47239200 47239200 70858800 70858800#in µs
+#ExposureTimes=300
+saveStackImages=true;   #The individual exposures are saved (or Not)
+saveSumImage=true;     #Save a sum image of all exposure time images (32bit, no normalization)
+
+[adaptive]
+maxExpTime=1000000  				#Maximum exposure time for each image in stack (µs)
+minExpTime=15	   				#Minumum exposure time (from HW GT1290 15µs)
+expTargetMeanValue=6000 		#Mean average image for exporsure adjustment
+expTimeFraction=10 	 			#auto exposure solved is divided by this value for HDR excess light capture 
+#integrationTargetMean=163830 	#integrate until mean reaches
+integrationTargetMean=500000 	#integrate until mean reaches
+
+#For debugging purposes only
+[test]
+#id =0; #filenaming test
+id = 1;
+
