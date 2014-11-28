@@ -11,7 +11,7 @@ INCLUDE_DIR 	    = .
 all: $(BIN_PATH)
 
 SRC_DIR		 = $(PROJECT_DIR)/.
-INCLUDE_DIRS	 = -I$(INCLUDE_DIR)
+INCLUDE_DIRS = -I$(INCLUDE_DIR)
 
 SOURCE_DIR 	=$(SRC_DIR)
 
@@ -25,17 +25,18 @@ DEFINES		=
 CFLAGS		= 
 
 OBJ_FILES	= $(OBJ_DIR)/viewHDR.o \
-		  $(OBJ_DIR)/commonImage.o
+		  $(OBJ_DIR)/commonImage.o \
+		  $(OBJ_DIR)/clahe.o
 
 DEPENDENCIES	= 
 
 SOURCES	= 	$(SRCDIR)/viewHDR.cpp \
-		$(SRCDIR)/commonImage.cpp
+		$(SRCDIR)/commonImage.cpp \
+		$(SRCDIR)/clahe.c
 
 MKDIR = mkdir
 RM = rm
 WORDSIZE = 64
-
 
 $(OBJ_DIR)/%.o: $(SOURCE_DIR)/%.cpp $(OBJ_DIR) 
 	$(CXX) -c $(INCLUDE_DIRS) $(DEFINES) $(CFLAGS) -m$(WORDSIZE) -o $@ $<
@@ -57,7 +58,7 @@ $(DOC_DIR):
 	$(MKDIR) -p $(DOC_DIR)
 
 edit: 
-	emacs Makefile .cpp *.h &
+	emacs Makefile *.c *.cpp *.h &
 
 wc:
-	wc -l *.cpp *.h 
+	wc -l *.c *.cpp *.h 

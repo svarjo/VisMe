@@ -48,8 +48,6 @@ int main(int argc, char** argv)
 
   /*
     cv::Mat image8bpp(img.height, img.width, CV_8UC1);
-
-
     //Scale data 	
     
     unsigned int *in = (unsigned int*) (img.data);
