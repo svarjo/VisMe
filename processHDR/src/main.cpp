@@ -56,8 +56,8 @@ int main(int argc, char** argv)
   bool verbose = false;
 
   double expTimesDef[] = { 25,50,100,200,400,800,1600,3200,6400,12800,25600,
-						51200,102400,204800,409600,819200,1638400,3276800,		
-						6553600,13107200,26214400,52428800};
+						   51200,102400,204800,409600,819200,1638400,3276800,		
+						   6553600,13107200,26214400,52428800};
 
   double *expTimes = expTimesDef;
   unsigned int NexpTimes = 22;
@@ -153,7 +153,7 @@ int main(int argc, char** argv)
 	}
   }
   if (verbose){
-	for (int id=0; id < NexpTimes; id++)
+	for (unsigned int id=0; id < NexpTimes; id++)
 		std::cout << expTimes[id] << " "; 
 	std::cout << std::endl;		
   }
@@ -187,26 +187,28 @@ int main(int argc, char** argv)
   // The actual image stack processing  (there is room to optimize so that 
   //                                     single image is read for stack at a time...
   ////////////////////////////////////////////////////////////////////////////////
-  
-  commonImage_t hdrImage;
     
   int idx = findLastOkExposureImage(imageStack, 0.5); //do not use first over exp  
   if (verbose) {std::cout << "Found max usable image idx:" << idx << std::endl;}
-  
-  //sumGrayStack( imageStack, &resultImage); //very dummy version  
+ 
+  commonImage_t hdrImage;	
+  //sumGrayStack( imageStack, &resultImage); //very dummy version   
   sumGrayStackWExpTimes(imageStack, expTimes, &hdrImage, idx);   
   releaseStackData( imageStack );
   imageStack.clear();
-  
-  commonImage_t workCopy;
-  normaliseGrayToDouble( &hdrImage, &workCopy ); 
 
-  //multiscaleRetinexFilter(  
+  commonImage_t workCopy;	
+  normaliseGrayToDouble( &hdrImage, &workCopy ); 
+  
+  multiscaleRetinexFilter( &workCopy, &hdrImage ); 
   //normaliseGrayTo8bit(&workCopy, &imageOut);
   
   commonImage_t imageOut;    
-  normaliseGrayTo32bit(&workCopy, &imageOut);  //TIFF 32bit int (retain most information) 
+
+  //normaliseGrayTo32bit(&workCopy, &imageOut);  //TIFF 32bit int (retain most information) 
+  normaliseGrayTo32bit(&hdrImage, &imageOut);  //TIFF 32bit int (retain most information) 
   //normaliseGrayTo8bit(&workCopy, &imageOut);
+//printCIm(  imageOut );
     
   saveTIFF( outName.c_str(), &imageOut, COMPRESSION_ZIP);
  

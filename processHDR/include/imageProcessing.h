@@ -105,6 +105,6 @@ using namespace commonImage;
 	 * 
 	 * @param input
 	 */
-    int convolution2D( commonImage_t *input, commonImage_t *imgD1, double **H1, int Hsize );
+    int convolution2D( commonImage_t *input, commonImage_t *imgD1, double *H1, unsigned int Hsize );
    
 #endif // IMAGEPROCESSING_H

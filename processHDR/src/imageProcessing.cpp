@@ -673,16 +673,11 @@ int findLastOkExposureImage( std::vector<commonImage_t> &stack , double th)
 
 int multiscaleRetinexFilter( commonImage_t *input, commonImage_t *output )
 {
-	commonImage_t imgD1;
-	imgD1.mode = (*input).Double1D;
-	imgD1.width = (*input).width;
-	imgD1.height = (*input).height;
-	imgD1.data = malloc(imgD1.width*imgD1.height * sizeof(double) );
-	if (imgD1.data==NULL){
-		return -1;
-	}
-		
-	
+	commonImage_t imgD1(Double1D, (*input).width, (*input).height, NULL);	
+	imgD1.data = malloc(imgD1.width*imgD1.height * sizeof(double) );	
+	if (imgD1.data==NULL){ return -1; }
+printCIm(  imgD1 );
+
 	//These are from the Matlab implementation (now they do not seem that "intelligent" might really
 	// be a bug but since these work on VisMe paper well use them here too... TODO check what is ok)
 	double H1[9][9] = {
@@ -707,10 +702,12 @@ int multiscaleRetinexFilter( commonImage_t *input, commonImage_t *output )
     {0.0123,    0.0123,    0.0123,    0.0123,    0.0123,    0.0123,    0.0123,    0.0123,    0.0123},
     {0.0123,    0.0123,    0.0123,    0.0123,    0.0123,    0.0123,    0.0123,    0.0123,    0.0123}};
 	
-	double H3[9][9] = 0.0123; //even more stupid block
+	//double H3[9][9] = 0.0123; //even more stupid block
 	
-	convolution2D( input, imgD1, H1, 9 );
-		
+	convolution2D( input, &imgD1, *H1, 9 );
+
+printCIm(  *output );		
+	normaliseGrayToDouble( &imgD1, output ); 
 	
 	if (imgD1.data != NULL) { free(imgD1.data); }	
 	return 0;
@@ -721,37 +718,63 @@ int multiscaleRetinexFilter( commonImage_t *input, commonImage_t *output )
  *  The kernel size is expected to be odd. 
  *  The borders outside valid area are set to zero;
  */
-int convolution2D( commonImage_t *input, commonImage_t *output, double **H, int Hsize )
+int convolution2D( commonImage_t *input, commonImage_t *output, double *H, unsigned int Hsize )
 {	
+	unsigned int imWidth = (*input).width;
 	unsigned int xs = Hsize>>1; 
 	unsigned int ys = Hsize>>1; 
-	unsigned int xe = input.width-xs-1;
-	unsigned int ye = input.height-ys-1;
+	unsigned int xe = imWidth-xs-1;
+	unsigned int ye = (*input).height-ys-1;
 	
+	
+	double **pin = (double**)malloc(sizeof(double*)*Hsize);	//Arrays for pointers
+	double **Hin = (double**)malloc(sizeof(double*)*Hsize);
+		
+	double *rval = (double *)malloc(sizeof(double)*Hsize);
 	double val;
 	
-	double *(*pin) = (double *)malloc(sizeof(double*)*Hsize);
-	double *(*Hin) = (double *)malloc(sizeof(double*)*Hsize);
-		
+	double *pOut;
 	
-	for (int r=ys; r<ye; r++){
-		for (int c=ys; c<ye; c++){
+	
+	for (unsigned int r=ys; r<ye; r++){
 		
-			//Set pointers to kernel row beginnings
-			for (int rid = 0; rid < Hsize; rid++){
-				Hin[rid] = H[0]+rid*Hsize;
-			}
-		
-			for( int hc=0; hc<Hsize; hc++){
+		pOut = ((double*)(*output).data + (r * imWidth) + xs);
 			
-				pin[rid] = input.data + c-xs + ((r-ys)*input.width) + 
+		for (unsigned int c=xs; c<xe; c++){
+		
+			//Set pointers to kernel row beginnings and to data block locations
+			//#pragma unroll //or parfor instead			
+			for (unsigned int rid = 0; rid < Hsize; rid++){
+
+				Hin[rid] = H+rid*Hsize;
+				pin[rid] = ((double*)(*input).data + c-xs + ((r-ys+rid)*imWidth));
+				rval[rid] = 0;
 				
-			
+			}
+				
+			for (unsigned int cid = 0;cid < Hsize; cid++){				
+				//#pragma unroll
+				for(unsigned int rid = 0; rid<Hsize; rid++){
+					rval[rid] += (*Hin[rid]++) * (*pin[rid]++);					
+				}
 			}
 			
+			val = 0;
+			//#pragma unroll			
+			for (unsigned int rid = 0; rid < Hsize; rid++){
+				val += rval[rid];
+			}
+			*pOut++ = val;			
+			
+//			*pOut++ = 1;
 		}
 	}
 	
 	//TODO set border pix to zero
 	
+	free( rval );
+	free( pin  );
+	free( Hin  );
+	
+	return 0;
 }

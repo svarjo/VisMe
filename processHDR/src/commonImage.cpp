@@ -200,5 +200,7 @@ int readTIFF (const char *path, commonImage_t *image, bool verbose )
   return rval;
 }
 
-
+void printCIm(commonImage_t &im){ 
+	std::cout << "mode:" << (unsigned int) im.mode << " width:" << 
+				im.width << " height:" << im.height << " ptrData:" << im.data << std::endl; }
 }//end namespace commonImage

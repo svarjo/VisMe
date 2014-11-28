@@ -25,6 +25,7 @@
 #define COMMON_IMAGE_H
 
 #include <vector>
+#include <iostream>
 
 namespace commonImage{
   
@@ -49,16 +50,17 @@ namespace commonImage{
    */
   typedef struct _commonImage{
   //constructors  
-  //_commonImage(): mode(Gray32bpp), width(-1), height(-1),data(NULL){}; //Fails 
+    //_commonImage(): mode(Gray32bpp), width(-1), height(-1),data(NULL){}; //Fails ?
     _commonImage(mode_e _m=Gray32bpp, int _w=-1, int _h=-1, void *b=NULL): mode(_m), width(_w), height(_h),data(b){}; //OK
-  
+	  
     mode_e mode;    ///Mode describing the color structure of the data bpp = bits per pixel
     int width;      ///the image width 
     int height;     ///the image height
     void *data;     ///the image data
+
   }commonImage_t;
 
-  
+  void printCIm(commonImage_t &im);
 
   /**
    * The supported image compression modes (as in tiff specification)
