@@ -60,13 +60,15 @@ using namespace commonImage;
    */
    int normaliseGrayTo32bit( commonImage_t *input, commonImage_t *output );
    
-   /**
-    * Gradient Magnitude in image
-	* @param input image to take gradient from
-	* @param output a pointer to commonImage_t, memory is allocated/reallocated if not fitting buffer
-	* @return error code, zero if success negative on error 
-	*/
-	int gradientMag( commonImage_t *input, commonImage_t *output );
+  /**
+   * Normalise a gray scale image to double format (eg for displaying)
+   *
+   * @param input the image to be normalised to range 0-1
+   * @param output a pointer to commonImage_t .data (re)allocated if no suitable buffer is detected
+   * @return error code, zero if success negative on error 
+   */
+   int normaliseGrayToDouble( commonImage_t *input, commonImage_t *output );
+  
    
    /**
     * Release the memory allocatd by the images in vector stack
@@ -75,11 +77,34 @@ using namespace commonImage;
    void releaseStackData( std::vector<commonImage_t> &stack );
    
    /**
-    * Find the image index that is first clearly overexposed image in image stack
+    * Find the image index that is is not yet highly overexposed in image stack (may be severly but...)
 	* @param stack std::vector<commonImage_t> containing images
+	* @param th the required threshold for cumulative distribution of histogram 
+	*	        saturated at the last bin (cdf[254] < th && cdf[255] > th)
 	* @return id of the image over exposed 
 	*/
-   int findFirstOverExposedImage( std::vector<commonImage_t> &stack , double th=0.5);
+   int findLastOkExposureImage( std::vector<commonImage_t> &stack , double th=0.5);
 
+   /**
+    * Multiscale Retinex filtering inspired by :
+	*
+	*  ref:"A Multiscale Retinex for Bridging the Gap Between Color Images and 
+    *      the Human Observation of Scenes" Daniel J. Jobson, Zia-ur Rahman, and Glenn A. Woodell
+    *      IEEE TRANSACTIONS ON IMAGE PROCESSING, VOL. 6, NO. 7, JULY 1997
+	*	
+	*	filtering parameters are hardcoded as in the above ref. 
+	*
+	*  @param input  commonImage_t *image (double)
+	*  @param output commonImage_t *image (double), (re)allocated if no suitable buffer is found at .data
+	*  @return error code, zero if success negative on error 
+	*/   
+	int multiscaleRetinexFilter( commonImage_t *input, commonImage_t *output );
+	
+	/**
+	 * Convolution using variable kernel 
+	 * 
+	 * @param input
+	 */
+    int convolution2D( commonImage_t *input, commonImage_t *imgD1, double **H1, int Hsize );
    
 #endif // IMAGEPROCESSING_H

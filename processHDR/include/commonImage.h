@@ -41,16 +41,16 @@ namespace commonImage{
     Gray32bpp,  /// single channel 32 bits per pixel
     RGB8bpp,    /// 3 channels 8 bpp (ie total 24 bpp)
     RGBA8bpp,   /// 4 channels 8 bpp (ie total 32 bpp)
-	Double1D	/// single channel as double
+	Double1D    /// single channel as double
   } mode_e;
 
   /**
    * The image container structure 
    */
   typedef struct _commonImage{
-  //constructors
-  _commonImage(): mode(Gray32bpp), width(-1), height(-1),data(NULL){};
-  _commonImage(mode_e _m, int _w, int _h, void *b): mode(_m), width(_w), height(_h),data(b){};
+  //constructors  
+  //_commonImage(): mode(Gray32bpp), width(-1), height(-1),data(NULL){}; //Fails 
+    _commonImage(mode_e _m=Gray32bpp, int _w=-1, int _h=-1, void *b=NULL): mode(_m), width(_w), height(_h),data(b){}; //OK
   
     mode_e mode;    ///Mode describing the color structure of the data bpp = bits per pixel
     int width;      ///the image width 
@@ -68,7 +68,7 @@ namespace commonImage{
     COMPRESSION_LZW=5,   ///Lempel-Ziv-Welch (lossless)
     COMPRESSION_JPG=7,   ///Joint Photographic Experts Group lossy file format. Note that do not work for 16 bit data.
     COMPRESSION_PACKBITS=32773, ///Lossless run-length encoding of data by Apple
-    COMPRESSION_ZIP=32946,      ///Lossless compression using ZIP
+    COMPRESSION_ZIP=32946       ///Lossless compression using ZIP
     
   }compressionType_e;
 

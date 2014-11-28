@@ -20,7 +20,8 @@ INCLUDE_DIRS	= -I$(INCLUDE_DIR) -I/usr/include -I../../tiff-4.0.3/libtiff
 
 TIFFLIBPATH = /home/samivarj/development/tiff-4.0.3/lib
 
-CFLAGS		+= -Wall 
+CFLAGS		+= -Wall -pedantic
+#CFLAGS		+= -Wall -O0 -g -pedantic
 #CFLAGS		+= $(shell pkg-config opencv --cflags)
 
 LIBS 		+= -L../../tiff-4.0.3/lib -ltiff -lstdc++

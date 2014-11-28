@@ -61,6 +61,6 @@ namespace FileIO{
    */
   void getFileNames(std::vector<std::string>  &files, std::string path, std::string prefix="*", std::string suffix="*");
 
-}; //end namespace FileIO
+} //end namespace FileIO
 
 #endif 

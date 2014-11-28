@@ -11,9 +11,15 @@
 #include <cstdlib>
 #include <iostream>
 #include <sys/stat.h>
-#include <dirent.h>
 #include <errno.h>
 #include <algorithm>    // std::sort
+
+#ifdef _WIN32
+	#include "dirent.h" //use a local version
+	#include <direct.h>
+#else
+	#include <dirent.h>
+#endif
 
 namespace FileIO
 {
@@ -25,8 +31,12 @@ namespace FileIO
     int rval=0;
     
     if ( stat( path, &st ) != 0){ //Do not exist already
-	
-      if ( mkdir( path, S_IRWXU|S_IRWXG) != 0){  //error while creating
+
+#ifdef _WIN32
+    if ( _mkdir( path ) != 0){  //error while creating
+#else
+	if ( mkdir( path, S_IRWXU|S_IRWXG) != 0){  //error while creating
+#endif
 
 	if (verbose){
 

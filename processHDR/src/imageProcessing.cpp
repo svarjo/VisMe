@@ -13,6 +13,11 @@
 #include <cmath>
 #include "imageProcessing.h"
  
+#ifdef _WIN32
+	int isnan(double x) { return x != x; }
+	int isinf(double x) { return !isnan(x) && isnan(x - x); }
+#endif
+
  #include <iostream> //DEBUG only
  
 /***************************************************
@@ -62,7 +67,7 @@
 				pOut = (unsigned int*)(*output).data;
 				int count = pixels;
 				while(count-- > 0){
-					*pOut++ += *pIn++;
+					*pOut++ += (unsigned int)(*pIn++);
 				}
 			}
 			break;
@@ -222,13 +227,11 @@
 	if ((*output).data == NULL || (*output).mode != Gray8bpp || (*output).width*(*output).height < pixels ){
 		(*output).mode = Gray8bpp;
 		(*output).width = width;
-		(*output).height = height;
-		
-		(*output).data = realloc((*output).data, pixels*sizeof(char) );
+		(*output).height = height;		
+		(*output).data = realloc( (*output).data, pixels*sizeof(char) );
 		if ((*output).data == NULL){
 			return -1;
-		}
-		//memset( (void *) (*output).data, '\0', pixels*sizeof(char) ); //But the out is not read!?		
+		}		
 	}
 	
 	unsigned char *pOut = (unsigned char*)(*output).data;	
@@ -310,7 +313,7 @@
 			
 			int count = pixels;
 			while(count-- > 0){
-				int val = *pIn++;
+				double val = *pIn++;
 				if (val < minVal)		{ minVal = val; }
 				else if(val > maxVal) 	{ maxVal = val; }
 			}						
@@ -339,13 +342,10 @@
 	int width  = (*input).width;
 	int height = (*input).height;
 	int pixels = width*height;
-	
-std::cout << "W:" << width << " H:" << height << " pix:" << pixels << std::endl;	
-	
-	double maxVal = std::numeric_limits<double>::min();
+			
+	double maxVal = -1;
 	double minVal = std::numeric_limits<double>::max();
 	double range;
-	
 	
 	if ((*output).data == NULL || (*output).mode != Gray32bpp || (*output).width*(*output).height < pixels ){
 		(*output).mode = Gray32bpp;
@@ -354,8 +354,7 @@ std::cout << "W:" << width << " H:" << height << " pix:" << pixels << std::endl;
 		(*output).data = realloc((*output).data, pixels*sizeof(unsigned int) );
 		if ((*output).data == NULL){
 			return -1;
-		}
-		memset( (void *) (*output).data, '\0', sizeof( (*output).data ) ); //But the out is not read!?
+		}	
 	}
 		
 	unsigned int *pOut = (unsigned int*)(*output).data;	
@@ -377,7 +376,7 @@ std::cout << "W:" << width << " H:" << height << " pix:" << pixels << std::endl;
 			
 			count = pixels;
 			while(count-- > 0){
-				*pOut++ = (unsigned int)(floor((double)(*pIn++)-minVal)*range); //floor to escape possible overflow?
+				*pOut++ = (unsigned int)(((double)(*pIn++)-minVal)*range); //floor to escape possible overflow?
 			}
 						
 			break;
@@ -401,7 +400,7 @@ std::cout << "W:" << width << " H:" << height << " pix:" << pixels << std::endl;
 						
 			count = pixels;
 			while(count-- > 0){
-				*pOut++ = (unsigned int)(floor((double)(*pIn++)-minVal)*range);
+				*pOut++ = (unsigned int)(((double)(*pIn++)-minVal)*range);				
 			}
 						
 			break;
@@ -422,7 +421,7 @@ std::cout << "W:" << width << " H:" << height << " pix:" << pixels << std::endl;
 			pOut = (unsigned int*)(*output).data;				
 			count = pixels;
 			while(count-- > 0){
-				*pOut++ = (unsigned int)(floor((double)(*pIn++)-minVal)*range);
+				*pOut++ = (unsigned int)(((double)(*pIn++)-minVal)*range);			
 			}						
 			break;
 		}
@@ -437,18 +436,23 @@ std::cout << "W:" << width << " H:" << height << " pix:" << pixels << std::endl;
 			
 			int count = pixels;
 			while(count-- > 0){
-				int val = *pIn++;
+				double val = *pIn++;
 				if (val < minVal)		{ minVal = val; }
 				else if(val > maxVal) 	{ maxVal = val; }
 			}
 			
 			range = std::numeric_limits<unsigned int>::max()/(maxVal-minVal);
-			
+	
 			pIn = (double*)(*input).data;
 			pOut = (unsigned int*)(*output).data;				
 			count = pixels;
 			while(count-- > 0){
-				*pOut++ = (unsigned int) (floor((*pIn++)-minVal)*range);
+				/*
+				double valD = ((*pIn++)-minVal)*range;
+				unsigned int val = (unsigned int) valD;
+				*pOut++ = val;
+				*/
+				*pOut++ = (unsigned int) (((*pIn++)-minVal)*range);				
 			}
 						
 			break;
@@ -474,40 +478,42 @@ void releaseStackData( std::vector<commonImage_t> &stack )
 }
   
 /********************************************************************************
- * find index of first over exposed image (assume increasing exp times in stack)
+ * find index of last image that can be used (assume increasing exp times in stack)
+ * th is used to limit how under / over exposured are directly skipped
  */
-int findFirstOverExposedImage( std::vector<commonImage_t> &stack , double th)
-{
-	commonImage_t imBuf;	
-		
+int findLastOkExposureImage( std::vector<commonImage_t> &stack , double th)
+{		
 	int   hist[256];
 	double cdf[256];
 	int idx = -1; //No over exposed found neg!
 	
-	std::vector<commonImage_t>::iterator image = stack.end();  
+	std::vector<commonImage_t>::iterator image = stack.end();
 	
-	
-	while ( image >= stack.begin() ){
-	
+//	commonImage_t imBuf(Gray8bpp, (*image).width, (*image).height,  NULL ); //OK
+	commonImage_t imBuf;
+		
+	while ( --image > stack.begin() ){
+
 		for(int i=0;i<256;i++){ 
 			cdf[i]=0;	
 			hist[i]=0;	
 		}		
+
 		normaliseGrayTo8bit( &(*image), &imBuf );
-		
+
 		int count = imBuf.width*imBuf.height;
 		unsigned char *ptD = (unsigned char *)imBuf.data;		
 		while( count-- > 0){
 			hist[ (*ptD++) ]++;
 		}
-				
+						
 		cdf[0] = hist[0];		
 		for(int i=1;i<256;i++){ 
 			cdf[i] = cdf[i-1] + hist[i];				
 		}
 		
 		for(int i=0;i<256;i++){ 
-			cdf[i]/=cdf[255]; //Would be enough id 0 254 255
+			cdf[i]/=cdf[255]; //Would be enough id 0 254 255?
 			if ( isnan(cdf[i]) )
 				cdf[i] = 0;
 			if ( isinf(cdf[i]) )
@@ -522,20 +528,230 @@ int findFirstOverExposedImage( std::vector<commonImage_t> &stack , double th)
 			continue;
 		}
 		
-		//A bit shorter than Matlab version (maybe good - maybe not TODO test)
-		if ( cdf[254] < th && cdf[255] > th ){
+		//A bit shorter than Matlab version (no max gradient for sum) (maybe good - maybe not :: TODO test)
+		if ( cdf[254] < th ){
 			idx = image - stack.begin() +1; 
 			//std::cout << "DBG MAX idx:"  << idx << std::endl;	
 			if (cdf[254] > 0.5)
 				break;
 		}		
-		image--;
+
+		image--;	
 	}
 
 	if( imBuf.data != NULL ) { free(imBuf.data); }	
-	
-	
+
 	return idx;
-	
 }
 
+/************************************************************************
+ * Scale data from input to range [0 1] in output
+ */
+ int normaliseGrayToDouble( commonImage_t *input, commonImage_t *output ) 
+ {
+	int width  = (*input).width;
+	int height = (*input).height;
+	int pixels = width*height;
+			
+	//double maxVal = -1;
+	double maxVal = std::numeric_limits<double>::min();
+	double minVal = std::numeric_limits<double>::max();
+	double range;
+	
+	if ((*output).data == NULL || (*output).mode != Double1D || (*output).width*(*output).height < pixels ){
+		(*output).mode = Double1D;
+		(*output).width = width;
+		(*output).height = height;
+		(*output).data = realloc((*output).data, pixels*sizeof(double) );
+		if ((*output).data == NULL){
+			return -1;
+		}	
+	}
+		
+	double *pOut = (double*)(*output).data;	
+	
+	switch((*input).mode){
+	
+		case Gray8bpp:{
+			unsigned char *pIn = (unsigned char*)(*input).data;
+			
+			int count = pixels;
+			while(count-- > 0){
+				unsigned char val = *pIn++;
+				if (val < minVal)		{ minVal = val; }
+				else if(val > maxVal) 	{ maxVal = val; }
+			}						
+			range = 1.0/(maxVal-minVal);
+			
+			pIn = (unsigned char*)(*input).data;
+			
+			count = pixels;
+			while(count-- > 0){
+				*pOut++ = (((double)(*pIn++)-minVal)*range); //floor to escape possible overflow?
+			}
+
+			break;
+		}
+		
+		case Gray10bpp:
+		case Gray12bpp:
+		case Gray14bpp:
+		case Gray16bpp:{
+			unsigned short *pIn = (unsigned short*)(*input).data;
+			
+			int count = pixels;
+			while(count-- > 0){
+				unsigned short val = *pIn++;
+				if (val < minVal)		{ minVal = val; }
+				else if(val > maxVal) 	{ maxVal = val; }
+			}						
+			range = 1.0/(maxVal-minVal);
+			
+			pIn = (unsigned short*)(*input).data;
+						
+			count = pixels;
+			while(count-- > 0){
+				*pOut++ = (((double)(*pIn++)-minVal)*range);				
+			}
+						
+			break;
+		}
+		case Gray24bpp:
+		case Gray32bpp:{
+			unsigned int *pIn = (unsigned int*)(*input).data;
+			
+			int count = pixels;
+			while(count-- > 0){
+				int val = *pIn++;
+				if (val < minVal)		{ minVal = val; }
+				else if(val > maxVal) 	{ maxVal = val; }
+			}						
+			range = 1.0/(maxVal-minVal);
+			
+			pIn = (unsigned int*)(*input).data;
+						
+			count = pixels;
+			while(count-- > 0){
+				*pOut++ = (((double)(*pIn++)-minVal)*range);			
+			}						
+			break;
+		}
+
+		case RGB8bpp:
+		case RGBA8bpp:		
+			return -2;
+			break;
+			
+		case Double1D:{
+			double *pIn = (double*)(*input).data;
+			
+			int count = pixels;
+			while(count-- > 0){
+				double val = *pIn++;
+				if (val < minVal)		{ minVal = val; }
+				else if(val > maxVal) 	{ maxVal = val; }
+			}
+			
+			range = 1.0/(maxVal-minVal);
+	
+			pIn = (double*)(*input).data;
+			count = pixels;
+			while(count-- > 0){		
+				*pOut++ = (((*pIn++)-minVal)*range);				
+			}
+						
+			break;
+		}
+    } 
+	return 0;
+ }
+
+/********************************************************************************
+ * Multiscale Retinex filtering (a sort of)
+ *  (here expect image on range [0 1]
+ */	
+
+int multiscaleRetinexFilter( commonImage_t *input, commonImage_t *output )
+{
+	commonImage_t imgD1;
+	imgD1.mode = (*input).Double1D;
+	imgD1.width = (*input).width;
+	imgD1.height = (*input).height;
+	imgD1.data = malloc(imgD1.width*imgD1.height * sizeof(double) );
+	if (imgD1.data==NULL){
+		return -1;
+	}
+		
+	
+	//These are from the Matlab implementation (now they do not seem that "intelligent" might really
+	// be a bug but since these work on VisMe paper well use them here too... TODO check what is ok)
+	double H1[9][9] = {
+    {0.0118,    0.0120,    0.0122,    0.0122,    0.0123,    0.0122,    0.0122,    0.0120,    0.0118},
+    {0.0120,    0.0122,    0.0124,    0.0124,    0.0125,    0.0124,    0.0124,    0.0122,    0.0120},
+    {0.0122,    0.0124,    0.0125,    0.0126,    0.0126,    0.0126,    0.0125,    0.0124,    0.0122},
+    {0.0122,    0.0124,    0.0126,    0.0127,    0.0127,    0.0127,    0.0126,    0.0124,    0.0122},
+    {0.0123,    0.0125,    0.0126,    0.0127,    0.0127,    0.0127,    0.0126,    0.0125,    0.0123},
+    {0.0122,    0.0124,    0.0126,    0.0127,    0.0127,    0.0127,    0.0126,    0.0124,    0.0122},
+    {0.0122,    0.0124,    0.0125,    0.0126,    0.0126,    0.0126,    0.0125,    0.0124,    0.0122},
+    {0.0120,    0.0122,    0.0124,    0.0124,    0.0125,    0.0124,    0.0124,    0.0122,    0.0120},
+    {0.0118,    0.0120,    0.0122,    0.0122,    0.0123,    0.0122,    0.0122,    0.0120,    0.0118}};
+	
+	double H2[9][9] = {	
+    {0.0123,    0.0123,    0.0123,    0.0123,    0.0123,    0.0123,    0.0123,    0.0123,    0.0123},
+    {0.0123,    0.0123,    0.0123,    0.0123,    0.0123,    0.0123,    0.0123,    0.0123,    0.0123},
+    {0.0123,    0.0123,    0.0124,    0.0124,    0.0124,    0.0124,    0.0124,    0.0123,    0.0123},
+    {0.0123,    0.0123,    0.0124,    0.0124,    0.0124,    0.0124,    0.0124,    0.0123,    0.0123},
+    {0.0123,    0.0123,    0.0124,    0.0124,    0.0124,    0.0124,    0.0124,    0.0123,    0.0123},
+    {0.0123,    0.0123,    0.0124,    0.0124,    0.0124,    0.0124,    0.0124,    0.0123,    0.0123},
+    {0.0123,    0.0123,    0.0124,    0.0124,    0.0124,    0.0124,    0.0124,    0.0123,    0.0123},
+    {0.0123,    0.0123,    0.0123,    0.0123,    0.0123,    0.0123,    0.0123,    0.0123,    0.0123},
+    {0.0123,    0.0123,    0.0123,    0.0123,    0.0123,    0.0123,    0.0123,    0.0123,    0.0123}};
+	
+	double H3[9][9] = 0.0123; //even more stupid block
+	
+	convolution2D( input, imgD1, H1, 9 );
+		
+	
+	if (imgD1.data != NULL) { free(imgD1.data); }	
+	return 0;
+}
+
+/**
+ * Do a convolution using 2D kernel 
+ *  The kernel size is expected to be odd. 
+ *  The borders outside valid area are set to zero;
+ */
+int convolution2D( commonImage_t *input, commonImage_t *output, double **H, int Hsize )
+{	
+	unsigned int xs = Hsize>>1; 
+	unsigned int ys = Hsize>>1; 
+	unsigned int xe = input.width-xs-1;
+	unsigned int ye = input.height-ys-1;
+	
+	double val;
+	
+	double *(*pin) = (double *)malloc(sizeof(double*)*Hsize);
+	double *(*Hin) = (double *)malloc(sizeof(double*)*Hsize);
+		
+	
+	for (int r=ys; r<ye; r++){
+		for (int c=ys; c<ye; c++){
+		
+			//Set pointers to kernel row beginnings
+			for (int rid = 0; rid < Hsize; rid++){
+				Hin[rid] = H[0]+rid*Hsize;
+			}
+		
+			for( int hc=0; hc<Hsize; hc++){
+			
+				pin[rid] = input.data + c-xs + ((r-ys)*input.width) + 
+				
+			
+			}
+			
+		}
+	}
+	
+	//TODO set border pix to zero
+	
+}

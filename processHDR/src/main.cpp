@@ -19,6 +19,7 @@
  *******************************************************************************/
 #include <iostream>
 #include <cstdlib>
+#include <cstdio>
 
 #include "imageProcessing.h"
 #include "fileIO.h"
@@ -27,54 +28,51 @@
 
 //#define DEBUG 1
 
+void printUsage(char* cmdStr)
+{
+	std::cout << "Usage: " << cmdStr << " <folder> -p <filePrefix> -s <fileSuffix> -o <outName> -e <file> -v"  << std::endl << std::endl;		  
+	std::cout << "<folder>          location of the image files to be stacked" << std::endl;
+	std::cout << "-p <filePrefix>   For example img (def) for files with name like imag0001.tif"<< std::endl;
+	std::cout << "-s <filePuffix>   For example .tif (def) for images img00003.tif" << std::endl;
+	std::cout << "-o <outName>      Output file name (will be tiff regardless of the suffix) (def) result.tif"<< std::endl;
+	std::cout << "-e <file>         If given load exposure times from given file (one per line as ascii)"<< std::endl;
+	std::cout << "-v                be verbose if given"<< std::endl;
+	std::cout << std::endl;
+	exit(0);
+}
 
 /*********************************************************
  * The program main entry point
  */
 int main(int argc, char** argv)
-{ 
-  
+{   
   std::string folderName = "."; 
   std::string filePrefix = "img"; 	//"*";  //default filename start with img eg img00004.tif
   std::string fileSuffix = ".tif";  //"*";  //default file typye .tif
   
-  std::string outName = "result.tif";
-  
+  std::string outName = "result.tif";  
+
+  bool loadExptimes = false;
   bool verbose = false;
-  
-   //Large values lead to double over flow
-/*   
-  double expTimes[] = { 25,50,100,200,400,800,1600,3200,6400,12800,25600,
+
+  double expTimesDef[] = { 25,50,100,200,400,800,1600,3200,6400,12800,25600,
 						51200,102400,204800,409600,819200,1638400,3276800,		
 						6553600,13107200,26214400,52428800};
-*/  
-  
-  //div by factor - This is required to avoid double over flow...
-  
-  //div by two can be optimized by bit shift
-/*  
-  double expTimes[] = { 0.0000007450580596923828125, 0.000001490116119384765625, 0.00000298023223876953125, 0.0000059604644775390625, 0.000011920928955078125, 0.00002384185791015625, 0.0000476837158203125, 0.000095367431640625,0.00019073486328125, 0.0003814697265625, 0.000762939453125, 0.00152587890625, 0.0030517578125, 0.006103515625,0.01220703125,0.0244140625, 0.048828125,	0.097656250000,0.1953125,0.390625,0.78125,1.5625,3.125,6.25,12.5,25,50,100,200,400,800,1600,3200,6400,12800,25600,51200,102400,204800,409600};
-*/  
-  
 
-  double expTimes[] = { 0.0244140625, 0.048828125,	0.097656250000,0.1953125,0.390625,0.78125,1.5625,3.125,6.25,12.5,25,50,100,200,400,800,1600,3200,6400,12800,25600,51200,102400,204800,409600};
-
-  // double expTimes[] = { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1};
+  double *expTimes = expTimesDef;
+  unsigned int NexpTimes = 22;
   
-  //double expTimes[] = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,255};
+  std::string expTimeFileName = "NOTHERE";
   
   ///////////////////////////////////////////////////
   // Handle the command line parameters 
   ///////////////////////////////////////////////////
   if (argc == 1)
   {
-	std::cout << "Usage: " << argv[0] << " <folder>"  << std::endl << std::endl;		  
-	exit(0);
+	printUsage(argv[0]);
   }
   
   if (argc >1){
-  
-    
 	
     for (int i=1; i<argc;i++){
 	
@@ -82,8 +80,7 @@ int main(int argc, char** argv)
 	  
       //Help requested
       if ( argStr == "-h" ){
-		std::cout << "Usage: " << argv[0] << " -f <folder> -p <filePrefix> -s <fileSuffix> -o <outName> -v"  << std::endl << std::endl;		  
-		exit(0);
+		printUsage(argv[0]);
       }	  
       
 	  else if ( argStr == "-p" && i<argc-1){	  
@@ -98,6 +95,21 @@ int main(int argc, char** argv)
 	  else if (argStr == "-v"){
 		verbose = true;
 	  }
+	  else if (argStr == "-e"){
+	  
+		if (i < argc-1){ 		
+			loadExptimes = true;
+			expTimeFileName = argv[++i];
+		
+			if ( !FileIO::fileExist( (char*)expTimeFileName.c_str() ) ){
+				std::cout << "Exposure time file '" << expTimeFileName << "' was not found" << std::endl;
+				exit(0);
+			}		
+		}else{
+			std::cout << "Exposure time file not given" << std::endl;
+			exit(0);
+		}
+	  }	  
 	  else {
 		
 		if( ! FileIO::dirExist( argv[i] ) ){
@@ -105,52 +117,111 @@ int main(int argc, char** argv)
 			exit(0);
 		}
 		else {
-			folderName = argStr;			
+			folderName = argStr;				
 		}
 	  }  
     }
   } //end for : command line parameters
 
+  ////////////////////////////////////////////////////////////////
+  //If separate text file containing exposure times read them in
+  //(each on single line as ascii)
+  if (loadExptimes){
+	FILE *pF;
+	pF = fopen(expTimeFileName.c_str(),"r");
+	int count = 0;
+	double val;
+	while( !feof( pF ) ){		
+		fscanf(pF, "%lf", &val);
+		count++;
+	}
+	NexpTimes = count;
+	rewind (pF);
+	expTimes = (double*) malloc(NexpTimes*sizeof(double));
+	count = 0;
+	if (verbose){
+		std::cout << NexpTimes << " exposure times from file '" << expTimeFileName << "':" << std::endl;
+	}
+	while( !feof( pF ) ){
+		fscanf(pF, "%lf", &expTimes[count++]);	
+	}	
+	fclose(pF);
+  }
+  else{
+	if (verbose){
+		std::cout << NexpTimes << " default exposure times in use '" << expTimeFileName << "':" << std::endl;
+	}
+  }
+  if (verbose){
+	for (int id=0; id < NexpTimes; id++)
+		std::cout << expTimes[id] << " "; 
+	std::cout << std::endl;		
+  }
+
+  ///////////////////////////////////////////////////////////
+  // Find the files containing the image stack and read them
+  // (assumed increasing exposure time in sorted file names 
+  // (sorting is done here)
   std::vector<std::string>  fileNames;
   FileIO::getFileNames(fileNames, folderName, filePrefix, fileSuffix);
   
+  if (NexpTimes < fileNames.size()){
+	std::cout << "More image files found than exposure times given. Terminating..." << std::endl;
+	exit(0);
+  }
+  
   std::vector<commonImage_t> imageStack;  
-    
+
   if (verbose){ std::cout << "Reading in images..." << std::endl;}
   std::vector<std::string>::iterator fName = fileNames.begin();
   while ( fName != fileNames.end() ){  	
 	commonImage_t imIn;
-	std::string fullPath = folderName+(*fName++);
-	
+	std::string fullPath = folderName+(*fName++);	
 	if(verbose)  {std::cout << fullPath << " ";}
 	readTIFF( fullPath.c_str(), &imIn, verbose);
 	imageStack.push_back(imIn);	
   }
   
-  commonImage_t resultImage;
+  ////////////////////////////////////////////////////////////////////////////////
+  //
+  // The actual image stack processing  (there is room to optimize so that 
+  //                                     single image is read for stack at a time...
+  ////////////////////////////////////////////////////////////////////////////////
   
-  int idx = findFirstOverExposedImage(imageStack, 0.5); //do not use first over exp
+  commonImage_t hdrImage;
+    
+  int idx = findLastOkExposureImage(imageStack, 0.5); //do not use first over exp  
+  if (verbose) {std::cout << "Found max usable image idx:" << idx << std::endl;}
   
-  if (verbose) {std::cout << "found max image idx:" << idx << std::endl;}
-  
-  //sumGrayStack( imageStack, &resultImage);  
-  sumGrayStackWExpTimes(imageStack, expTimes, &resultImage, idx-1);
-  
-  commonImage_t imageOut;
-  
-  normaliseGrayTo32bit(&resultImage, &imageOut); 
-  //normaliseGrayTo8bit(&resultImage, &imageOut);
-  
-  saveTIFF( outName.c_str(), &imageOut, COMPRESSION_ZIP);
-  
-  //Clean UP
+  //sumGrayStack( imageStack, &resultImage); //very dummy version  
+  sumGrayStackWExpTimes(imageStack, expTimes, &hdrImage, idx);   
   releaseStackData( imageStack );
+  imageStack.clear();
+  
+  commonImage_t workCopy;
+  normaliseGrayToDouble( &hdrImage, &workCopy ); 
+
+  //multiscaleRetinexFilter(  
+  //normaliseGrayTo8bit(&workCopy, &imageOut);
+  
+  commonImage_t imageOut;    
+  normaliseGrayTo32bit(&workCopy, &imageOut);  //TIFF 32bit int (retain most information) 
+  //normaliseGrayTo8bit(&workCopy, &imageOut);
+    
+  saveTIFF( outName.c_str(), &imageOut, COMPRESSION_ZIP);
+ 
+  //Clean UP  
   fileNames.clear();
   free(imageOut.data);
-  free(resultImage.data);
+  free(workCopy.data);
+  free(hdrImage.data);
+  
+  if (expTimes != expTimesDef)
+	free(expTimes);
   
   if (verbose){
 	std::cout << "Done" << std::endl;
   }
+
   return 0;
 }
