@@ -24,6 +24,7 @@
 
 #include "imageProcessing.h"
 #include "fileIO.h"
+#include "clahe.h"
 
 //using namespace VisMe;
 
@@ -37,6 +38,7 @@ void printUsage(char* cmdStr)
 	std::cout << "-s <filePuffix>   For example .tif (def) for images img00003.tif" << std::endl;
 	std::cout << "-o <outName>      Output file name (will be tiff regardless of the suffix) (def) result.tif"<< std::endl;
 	std::cout << "-e <file>         If given load exposure times from given file (one per line as ascii)"<< std::endl;
+	std::cout << "-c                Apply CLAHE (contrast limited adaptive histogram equalization) on the hdr stack" << std::endl;
 	std::cout << "-r                Compute retinex filter response (mean response out to std::out) (by default raw mean)" << std::endl;
 	std::cout << "-v                be verbose if given"<< std::endl;
 	std::cout << std::endl;
@@ -60,7 +62,8 @@ int main(int argc, char** argv)
   bool verbose = false;
   bool saveResultImage = false;
   bool doRetinexFiltering = false;
-
+  bool doCLAHE = false;
+  
   float expTimesDef[] = { 25,50,100,200,400,800,1600,3200,6400,12800,25600,
 						   51200,102400,204800,409600,819200,1638400,3276800,		
 						   6553600,13107200,26214400,52428800};
@@ -105,6 +108,9 @@ int main(int argc, char** argv)
 	  else if (argStr == "-r"){
 		doRetinexFiltering = true;
 	  }
+	  else if (argStr == "-c"){
+		doCLAHE = true;
+	  }	  
 	  
 	  else if (argStr == "-e"){
 	  
@@ -214,6 +220,23 @@ int main(int argc, char** argv)
   commonImage_t imageOut;    
   
   double resSum;
+  
+  if (doCLAHE){    
+    
+std::cout << "CLAHE has some bugs! Bailing out!!!  " << std::endl;
+exit(-1);
+	
+	normaliseGrayTo8bit( &hdrImage, &workCopy);		
+		
+	CLAHE(	(kz_pixel_t*) workCopy.data, 			//image data
+			workCopy.width, workCopy.height, 		//image size X,Y
+			0, 255, 								//value range (both in and out)
+			4,4,									//number of regions in x,y (min 2, max uiMAX_REG_X)
+			1024,									//Number of greybins for histogram ("dynamic range")
+			0.01);									//Normalized cliplimit, A clip limit smaller than 1 
+			
+	normaliseGrayToFloat(&workCopy, &hdrImage);
+  }  
   
   if (doRetinexFiltering) {
 	//  normaliseGrayToFloat( &hdrImage, &workCopy );   //TODO check normalisation to double effect
