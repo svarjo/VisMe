@@ -20,6 +20,7 @@
 #include <iostream>
 #include <cstdlib>
 #include <cstdio>
+#include <limits>
 
 #include "imageProcessing.h"
 #include "fileIO.h"
@@ -36,8 +37,11 @@ void printUsage(char* cmdStr)
 	std::cout << "-s <filePuffix>   For example .tif (def) for images img00003.tif" << std::endl;
 	std::cout << "-o <outName>      Output file name (will be tiff regardless of the suffix) (def) result.tif"<< std::endl;
 	std::cout << "-e <file>         If given load exposure times from given file (one per line as ascii)"<< std::endl;
+	std::cout << "-r                Compute retinex filter response (mean response out to std::out) (by default raw mean)" << std::endl;
 	std::cout << "-v                be verbose if given"<< std::endl;
 	std::cout << std::endl;
+	std::cout << "example:> " <<cmdStr<<  " data/2014-08-15/ -o data/2014-08-15_result.tif -e data/expTimes.txt -r -v" << std::endl << std::endl;;
+
 	exit(0);
 }
 
@@ -54,12 +58,14 @@ int main(int argc, char** argv)
 
   bool loadExptimes = false;
   bool verbose = false;
+  bool saveResultImage = false;
+  bool doRetinexFiltering = false;
 
-  double expTimesDef[] = { 25,50,100,200,400,800,1600,3200,6400,12800,25600,
+  float expTimesDef[] = { 25,50,100,200,400,800,1600,3200,6400,12800,25600,
 						   51200,102400,204800,409600,819200,1638400,3276800,		
 						   6553600,13107200,26214400,52428800};
 
-  double *expTimes = expTimesDef;
+  float *expTimes = expTimesDef;
   unsigned int NexpTimes = 22;
   
   std::string expTimeFileName = "inbuild exposure times (no file given)";
@@ -91,10 +97,15 @@ int main(int argc, char** argv)
 	  }
 	  else if (argStr == "-o" && i <argc-1){
 		outName = argv[++i];
+		saveResultImage = true;
 	  }
 	  else if (argStr == "-v"){
 		verbose = true;
 	  }
+	  else if (argStr == "-r"){
+		doRetinexFiltering = true;
+	  }
+	  
 	  else if (argStr == "-e"){
 	  
 		if (i < argc-1){ 		
@@ -137,13 +148,13 @@ int main(int argc, char** argv)
 	}
 	NexpTimes = count;
 	rewind (pF);
-	expTimes = (double*) malloc(NexpTimes*sizeof(double));
+	expTimes = (float*) malloc(NexpTimes*sizeof(float));
 	count = 0;
 	if (verbose){
 		std::cout << NexpTimes << " exposure times in '" << expTimeFileName << "':" << std::endl;
 	}
 	while( !feof( pF ) ){
-		fscanf(pF, "%lf", &expTimes[count++]);	
+		fscanf(pF, "%f", &expTimes[count++]);	
 	}	
 	fclose(pF);
   }
@@ -191,27 +202,43 @@ int main(int argc, char** argv)
   int idx = findLastOkExposureImage(imageStack, 0.5); //do not use first over exp  
   if (verbose) {std::cout << "Found max usable image idx:" << idx << std::endl;}
  
-  commonImage_t hdrImage;	
+  
+  commonImage_t hdrImage;
+  
   //sumGrayStack( imageStack, &resultImage); //very dummy version   
   sumGrayStackWExpTimes(imageStack, expTimes, &hdrImage, idx);   
   releaseStackData( imageStack );
   imageStack.clear();
 
   commonImage_t workCopy;	
-  normaliseGrayToDouble( &hdrImage, &workCopy ); 
-  
-  multiscaleRetinexFilter( &workCopy, &hdrImage ); 
-  //normaliseGrayTo8bit(&workCopy, &imageOut);
-  
   commonImage_t imageOut;    
+  
+  double resSum;
+  
+  if (doRetinexFiltering) {
+	//  normaliseGrayToFloat( &hdrImage, &workCopy );   //TODO check normalisation to double effect
+	//  multiscaleRetinexFilter( &workCopy, &hdrImage); 
+	multiscaleRetinexFilter( &hdrImage, &workCopy ); 	
+	normaliseGrayToFloat(&workCopy, &workCopy);
+	
+	if (verbose) {
+	std::cout << "Retinex filtered mean response: " ;
+	}
+  }
+  else{
+	normaliseGrayToFloat(&hdrImage, &workCopy); 
+	if (verbose) {
+	std::cout << "Mean raw response: " ;
+	}
+  }
 
-  //normaliseGrayTo32bit(&workCopy, &imageOut);  //TIFF 32bit int (retain most information) 
-  normaliseGrayTo32bit(&hdrImage, &imageOut);  //TIFF 32bit int (retain most information) 
-  //normaliseGrayTo8bit(&workCopy, &imageOut);
-//printCIm(  imageOut );
-    
-  saveTIFF( outName.c_str(), &imageOut, COMPRESSION_ZIP);
- 
+  resSum = totalSum( &workCopy ) / (double)(workCopy.width*workCopy.height);	
+  std::cout << resSum << std::endl;
+	
+  if (saveResultImage) {  
+	normaliseGrayTo32bit(&workCopy, &imageOut);  //TIFF 32bit int (retain most information) 
+	saveTIFF( outName.c_str(), &imageOut, COMPRESSION_ZIP);  
+  }
   //Clean UP  
   fileNames.clear();
   free(imageOut.data);

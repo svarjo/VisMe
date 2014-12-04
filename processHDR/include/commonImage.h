@@ -42,7 +42,8 @@ namespace commonImage{
     Gray32bpp,  /// single channel 32 bits per pixel
     RGB8bpp,    /// 3 channels 8 bpp (ie total 24 bpp)
     RGBA8bpp,   /// 4 channels 8 bpp (ie total 32 bpp)
-	Double1D    /// single channel as double
+	Double1D,   /// single channel as double
+	Float1D     /// single channel as float
   } mode_e;
 
   /**
