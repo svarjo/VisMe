@@ -488,8 +488,7 @@ int findLastOkExposureImage( std::vector<commonImage_t> &stack , double th)
 	int idx = -1; //No over exposed found neg!
 	
 	std::vector<commonImage_t>::iterator image = stack.end();
-	
-//	commonImage_t imBuf(Gray8bpp, (*image).width, (*image).height,  NULL ); //OK
+
 	commonImage_t imBuf;
 		
 	while ( --image > stack.begin() ){
@@ -676,10 +675,12 @@ int multiscaleRetinexFilter( commonImage_t *input, commonImage_t *output )
 	commonImage_t imgD1(Double1D, (*input).width, (*input).height, NULL);	
 	imgD1.data = malloc(imgD1.width*imgD1.height * sizeof(double) );	
 	if (imgD1.data==NULL){ return -1; }
-printCIm(  imgD1 );
 
+#include "RetinexFilt9x9.h"	
+	
 	//These are from the Matlab implementation (now they do not seem that "intelligent" might really
 	// be a bug but since these work on VisMe paper well use them here too... TODO check what is ok)
+/*	
 	double H1[9][9] = {
     {0.0118,    0.0120,    0.0122,    0.0122,    0.0123,    0.0122,    0.0122,    0.0120,    0.0118},
     {0.0120,    0.0122,    0.0124,    0.0124,    0.0125,    0.0124,    0.0124,    0.0122,    0.0120},
@@ -702,11 +703,26 @@ printCIm(  imgD1 );
     {0.0123,    0.0123,    0.0123,    0.0123,    0.0123,    0.0123,    0.0123,    0.0123,    0.0123},
     {0.0123,    0.0123,    0.0123,    0.0123,    0.0123,    0.0123,    0.0123,    0.0123,    0.0123}};
 	
-	//double H3[9][9] = 0.0123; //even more stupid block
+	
+	double H2[9][9] = {	//even more stupid block
+    {0.0123,    0.0123,    0.0123,    0.0123,    0.0123,    0.0123,    0.0123,    0.0123,    0.0123},
+    {0.0123,    0.0123,    0.0123,    0.0123,    0.0123,    0.0123,    0.0123,    0.0123,    0.0123},
+    {0.0123,    0.0123,    0.0123,    0.0123,    0.0123,    0.0123,    0.0123,    0.0123,    0.0123},
+    {0.0123,    0.0123,    0.0123,    0.0123,    0.0123,    0.0123,    0.0123,    0.0123,    0.0123},
+    {0.0123,    0.0123,    0.0123,    0.0123,    0.0123,    0.0123,    0.0123,    0.0123,    0.0123},
+    {0.0123,    0.0123,    0.0123,    0.0123,    0.0123,    0.0123,    0.0123,    0.0123,    0.0123},
+    {0.0123,    0.0123,    0.0123,    0.0123,    0.0123,    0.0123,    0.0123,    0.0123,    0.0123},
+    {0.0123,    0.0123,    0.0123,    0.0123,    0.0123,    0.0123,    0.0123,    0.0123,    0.0123},
+    {0.0123,    0.0123,    0.0123,    0.0123,    0.0123,    0.0123,    0.0123,    0.0123,    0.0123}};
+*/	
+	
 	
 	convolution2D( input, &imgD1, *H1, 9 );
 
-printCIm(  *output );		
+	
+	
+//printCIm(  *output );	
+
 	normaliseGrayToDouble( &imgD1, output ); 
 	
 	if (imgD1.data != NULL) { free(imgD1.data); }	
@@ -714,7 +730,7 @@ printCIm(  *output );
 }
 
 /**
- * Do a convolution using 2D kernel 
+ * Do a convolution using 2D kernel having variable size
  *  The kernel size is expected to be odd. 
  *  The borders outside valid area are set to zero;
  */
@@ -723,58 +739,96 @@ int convolution2D( commonImage_t *input, commonImage_t *output, double *H, unsig
 	unsigned int imWidth = (*input).width;
 	unsigned int xs = Hsize>>1; 
 	unsigned int ys = Hsize>>1; 
-	unsigned int xe = imWidth-xs-1;
-	unsigned int ye = (*input).height-ys-1;
-	
-	
+	unsigned int xe = imWidth-(xs*2);
+	unsigned int ye = (*input).height-ys;
+		
 	double **pin = (double**)malloc(sizeof(double*)*Hsize);	//Arrays for pointers
 	double **Hin = (double**)malloc(sizeof(double*)*Hsize);
 		
+	double **Hin0 = (double**)malloc(sizeof(double*)*Hsize); //init addresses precomputed
+	double **pin0 = (double**)malloc(sizeof(double*)*Hsize); //Arrays for pointers
+	
+	for (unsigned int rid = 0; rid < Hsize; rid++){
+		Hin0[rid] = (H+rid*Hsize);
+	}	
+	
 	double *rval = (double *)malloc(sizeof(double)*Hsize);
 	double val;
 	
 	double *pOut;
-	
-	
+		
 	for (unsigned int r=ys; r<ye; r++){
 		
 		pOut = ((double*)(*output).data + (r * imWidth) + xs);
-			
-		for (unsigned int c=xs; c<xe; c++){
+		
+		for(unsigned int rid = 0; rid < Hsize; rid++){
+			pin0[rid] = ((double*)(*input).data + (r-ys+rid)*imWidth);
+		}	
+	
+		for (unsigned int c=0; c<xe; c++){
 		
 			//Set pointers to kernel row beginnings and to data block locations
-			//#pragma unroll //or parfor instead			
+			//#pragma parfor 
 			for (unsigned int rid = 0; rid < Hsize; rid++){
-
-				Hin[rid] = H+rid*Hsize;
-				pin[rid] = ((double*)(*input).data + c-xs + ((r-ys+rid)*imWidth));
+				//Hin[rid] = H+rid*Hsize;
+				//pin[rid] = ((double*)(*input).data + c + ((r-ys+rid)*imWidth));						
+				Hin[rid] = Hin0[rid];
+				pin[rid] = pin0[rid] + c ;				
 				rval[rid] = 0;
 				
 			}
 				
 			for (unsigned int cid = 0;cid < Hsize; cid++){				
-				//#pragma unroll
+				//#pragma parfor 
 				for(unsigned int rid = 0; rid<Hsize; rid++){
 					rval[rid] += (*Hin[rid]++) * (*pin[rid]++);					
 				}
 			}
 			
 			val = 0;
-			//#pragma unroll			
+		
 			for (unsigned int rid = 0; rid < Hsize; rid++){
 				val += rval[rid];
 			}
-			*pOut++ = val;			
-			
-//			*pOut++ = 1;
+			*pOut++ = val;						
+			//*pOut++ = 1;
 		}
 	}
+
+	//set border pix to zero 
+	pOut = (double*)(*output).data;
+	memset( pOut, 0, sizeof(double)*imWidth*ys);
+	pOut = (double*)(*output).data + ye * imWidth;
+	memset( pOut, 0, sizeof(double)*imWidth*ys);	
 	
-	//TODO set border pix to zero
+	pOut = ((double*)(*output).data + (ys * imWidth) );
+	int stride = imWidth - Hsize + 1;
+	int stCount = (*input).height - Hsize ;	
+	for (int c = xs; c >0; c--) { *pOut++=0; }
+	pOut += stride;	
+	while (stCount-->0) {		
+		for (int c = xs+xs; c >0; c--) { *pOut++=0; }
+		pOut += stride;
+	}
+	for (int c = xs; c >0; c--) { *pOut++=0; }
+	
+	/* //TODO which is faster?
+	for (unsigned int r=ys; r<ye; r++){
+		pOut = ((double*)(*output).data + (r * imWidth) );	
+		double *pOut2 = ((double*)(*output).data + (r * imWidth) + xe);	
+		for (unsigned int cid = 0;cid <= xs; cid++){		
+			*pOut++ = 0;
+			*pOut2++ = 0;
+		}		
+	}
+	*/
+	
 	
 	free( rval );
 	free( pin  );
 	free( Hin  );
+	free( Hin0 );
+	free( pin0 );
 	
 	return 0;
 }

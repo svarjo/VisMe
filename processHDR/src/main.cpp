@@ -62,7 +62,7 @@ int main(int argc, char** argv)
   double *expTimes = expTimesDef;
   unsigned int NexpTimes = 22;
   
-  std::string expTimeFileName = "NOTHERE";
+  std::string expTimeFileName = "inbuild exposure times (no file given)";
   
   ///////////////////////////////////////////////////
   // Handle the command line parameters 
@@ -140,7 +140,7 @@ int main(int argc, char** argv)
 	expTimes = (double*) malloc(NexpTimes*sizeof(double));
 	count = 0;
 	if (verbose){
-		std::cout << NexpTimes << " exposure times from file '" << expTimeFileName << "':" << std::endl;
+		std::cout << NexpTimes << " exposure times in '" << expTimeFileName << "':" << std::endl;
 	}
 	while( !feof( pF ) ){
 		fscanf(pF, "%lf", &expTimes[count++]);	
