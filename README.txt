@@ -1,3 +1,11 @@
+## 
+# camCtrl - Vimba based camera control software to capture image stacks with 
+#           given interval 
+#
+# processHDR - Image processing to produce HDR data from image stacks 
+#              filtering and response from data (and result image out)
+#
+
 #to check out local git repository:
 git clone /research/imag/personal/varjo/programming/VisMe.git/
 
