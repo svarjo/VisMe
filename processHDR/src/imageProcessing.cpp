@@ -3,7 +3,7 @@
  *
  * implement imageProcessing.h
  *
- * Sami Varjo 
+ * Sami Varjo 2014
  *****************************************************************/
 
 #include <cstdlib>
@@ -96,7 +96,7 @@
 				pOut = (unsigned int*)(*output).data;
 				int count = pixels;
 				while(count-- > 0){
-					*pOut++ += *pIn++;
+					*pOut++ += (unsigned int)*pIn++;
 				}
 			}
 			break;
@@ -110,7 +110,7 @@
 				pOut = (unsigned int*)(*output).data;
 				int count = pixels;
 				while(count-- > 0){
-					*pOut++ += *pIn++;
+					*pOut++ += (unsigned int)*pIn++;
 				}
 			}
 			break;
@@ -218,7 +218,7 @@
 				weight = expTimes[id++];
 				int count = pixels;
 				while(count-- > 0){
-					*pOut++ += (*pIn++) * weight;
+					*pOut++ += (float)(*pIn++) * weight;
 				}
 			}
 			break;
@@ -387,6 +387,150 @@
     } 
 	
 	
+	return 0;
+ }
+ 
+  
+/************************************************************
+ * Scale image data to range 0-255 
+ */
+ int normaliseGrayTo12bit( commonImage_t *input, commonImage_t *output )
+ {
+	int width  = (*input).width;
+	int height = (*input).height;
+	int pixels = width*height;
+	
+	double maxVal = std::numeric_limits<double>::min();
+	double minVal = std::numeric_limits<double>::max();
+	double range;
+		
+	if ((*output).data == NULL || (*output).mode != Gray8bpp || (*output).width*(*output).height < pixels ){
+		(*output).mode = Gray12bpp;
+		(*output).width = width;
+		(*output).height = height;		
+		(*output).data = realloc( (*output).data, pixels*sizeof(unsigned short) );
+		if ((*output).data == NULL){
+			return -1;
+		}		
+	}
+	
+	unsigned short *pOut = (unsigned short*)(*output).data;	
+	
+	switch((*input).mode){
+	
+		case Gray8bpp:{
+			unsigned char *pIn;			
+			pIn = (unsigned char*)(*input).data;
+			
+			int count = pixels;
+			while(count-- > 0){
+				unsigned char val = *pIn++;
+				if (val < minVal)		{ minVal = val; }
+				else if(val > maxVal) 	{ maxVal = val; }
+			}						
+			range = 4095/(maxVal-minVal);			
+			pIn = (unsigned char*)(*input).data;			
+			count = pixels;
+			while(count-- > 0){
+				*pOut++ = (unsigned char)(((double)(*pIn++)-minVal)*range);
+			}
+			break;
+		}
+		
+		case Gray10bpp:
+		case Gray12bpp:
+		case Gray14bpp:
+		case Gray16bpp:{
+			unsigned short *pIn;			
+			pIn = (unsigned short*)(*input).data;
+			
+			int count = pixels;
+			while(count-- > 0){
+				unsigned short val = *pIn++;
+				if (val < minVal)		{ minVal = val; }
+				else if(val > maxVal) 	{ maxVal = val; }
+			}						
+			range = 4095/(maxVal-minVal);
+			
+			pIn = (unsigned short*)(*input).data;
+						
+			count = pixels;
+			while(count-- > 0){
+				*pOut++ = (unsigned short)(((double)(*pIn++)-minVal)*range);
+			}
+						
+			break;
+		}
+		case Gray24bpp:
+		case Gray32bpp:{
+			unsigned int *pIn;			
+			pIn = (unsigned int*)(*input).data;
+			
+			int count = pixels;
+			while(count-- > 0){
+				int val = *pIn++;
+				if (val < minVal)		{ minVal = val; }
+				else if(val > maxVal) 	{ maxVal = val; }
+			}						
+			range = 4095/(maxVal-minVal);
+			
+			pIn = (unsigned int*)(*input).data;
+			pOut = (unsigned short*)(*output).data;				
+			count = pixels;
+			while(count-- > 0){
+				*pOut++ = (unsigned short)(((double)(*pIn++)-minVal)*range);
+			}						
+			break;
+		}
+
+		case RGB8bpp:
+		case RGBA8bpp:		
+			return -2;
+			break;
+			
+		case Double1D:{
+			double *pIn = (double*)(*input).data;
+			
+			int count = pixels;
+			while(count-- > 0){
+				double val = *pIn++;
+				if (val < minVal)		{ minVal = val; }
+				else if(val > maxVal) 	{ maxVal = val; }
+			}						
+			range = 4095/(maxVal-minVal);
+			
+			pIn = (double*)(*input).data;
+			pOut = (unsigned short*)(*output).data;				
+			count = pixels;
+			while(count-- > 0){
+				*pOut++ = (unsigned short) (((*pIn++)-minVal)*range);
+			}
+						
+			break;
+		}
+		
+		case Float1D:{
+			float *pIn = (float*)(*input).data;
+			
+			int count = pixels;
+			while(count-- > 0){
+				float val = *pIn++;
+				if (val < minVal)		{ minVal = val; }
+				else if(val > maxVal) 	{ maxVal = val; }
+			}						
+			range = 4095/(maxVal-minVal);
+			
+			pIn = (float*)(*input).data;
+			pOut = (unsigned short*)(*output).data;				
+			count = pixels;
+			while(count-- > 0){
+				*pOut++ = (unsigned short) (((*pIn++)-minVal)*range);
+			}
+						
+			break;
+		}
+		
+    } 
 	return 0;
  }
  
@@ -799,7 +943,7 @@ int findLastOkExposureImage( std::vector<commonImage_t> &stack , double th)
 				if (val < minVal)		{ minVal = val; }
 				else if(val > maxVal) 	{ maxVal = val; }
 			}						
-			range = 1.0/(maxVal-minVal);
+			range = (float)(1.0/(maxVal-minVal));
 			
 			pIn = (unsigned char*)(*input).data;
 			
@@ -823,7 +967,7 @@ int findLastOkExposureImage( std::vector<commonImage_t> &stack , double th)
 				if (val < minVal)		{ minVal = val; }
 				else if(val > maxVal) 	{ maxVal = val; }
 			}						
-			range = 1.0/(maxVal-minVal);
+			range = (float)(1.0/(maxVal-minVal));
 			
 			pIn = (unsigned short*)(*input).data;
 						
@@ -841,10 +985,10 @@ int findLastOkExposureImage( std::vector<commonImage_t> &stack , double th)
 			int count = pixels;
 			while(count-- > 0){
 				int val = *pIn++;
-				if (val < minVal)		{ minVal = val; }
-				else if(val > maxVal) 	{ maxVal = val; }
+				if (val < minVal)		{ minVal = (float)val; }
+				else if(val > maxVal) 	{ maxVal = (float)val; }
 			}						
-			range = 1.0/(maxVal-minVal);
+			range = (float)(1.0/(maxVal-minVal));
 			
 			pIn = (unsigned int*)(*input).data;
 						
@@ -866,11 +1010,11 @@ int findLastOkExposureImage( std::vector<commonImage_t> &stack , double th)
 			int count = pixels;
 			while(count-- > 0){
 				double val = *pIn++;
-				if (val < minVal)		{ minVal = val; }
-				else if(val > maxVal) 	{ maxVal = val; }
+				if (val < minVal)		{ minVal = (float)val; }
+				else if(val > maxVal) 	{ maxVal = (float)val; }
 			}
 			
-			range = 1.0/(maxVal-minVal);
+			range = (float)(1.0/(maxVal-minVal));
 	
 			pIn = (double*)(*input).data;
 			count = pixels;
@@ -887,11 +1031,11 @@ int findLastOkExposureImage( std::vector<commonImage_t> &stack , double th)
 			int count = pixels;
 			while(count-- > 0){
 				double val = *pIn++;
-				if (val < minVal)		{ minVal = val; }
-				else if(val > maxVal) 	{ maxVal = val; }
+				if (val < minVal)		{ minVal = (float)val; }
+				else if(val > maxVal) 	{ maxVal = (float)val; }
 			}
 			
-			range = 1.0/(maxVal-minVal);
+			range = (float)(1.0/(maxVal-minVal));
 	
 			pIn = (float*)(*input).data;
 			count = pixels;

@@ -1,52 +1,9 @@
-
-/*
- * ANSI C code from the article
- * "Contrast Limited Adaptive Histogram Equalization"
- * by Karel Zuiderveld, karel@cv.ruu.nl
- * in "Graphics Gems IV", Academic Press, 1994
- *
- *
- *  These functions implement Contrast Limited Adaptive Histogram Equalization.
- *  The main routine (CLAHE) expects an input image that is stored contiguously in
- *  memory;  the CLAHE output image overwrites the original input image and has the
- *  same minimum and maximum values (which must be provided by the user).
- *  This implementation assumes that the X- and Y image resolutions are an integer
- *  multiple of the X- and Y sizes of the contextual regions. A check on various other
- *  error conditions is performed.
- *
- *  #define the symbol BYTE_IMAGE to make this implementation suitable for
- *  8-bit images. The maximum number of contextual regions can be redefined
- *  by changing uiMAX_REG_X and/or uiMAX_REG_Y; the use of more than 256
- *  contextual regions is not recommended.
- *
- *  The code is ANSI-C and is also C++ compliant.
- *
- *  Author: Karel Zuiderveld, Computer Vision Research Group,
- *	     Utrecht, The Netherlands (karel@cv.ruu.nl)
- */
 #include "clahe.h"
-
-
-/*********************** Local prototypes ************************/
-static void ClipHistogram (unsigned long*, unsigned int, unsigned long);
-static void MakeHistogram (kz_pixel_t*, unsigned int, unsigned int, unsigned int,
-		unsigned long*, unsigned int, kz_pixel_t*);
-static void MapHistogram (unsigned long*, kz_pixel_t, kz_pixel_t,
-	       unsigned int, unsigned long);
-static void MakeLut (kz_pixel_t*, kz_pixel_t, kz_pixel_t, unsigned int);
-static void Interpolate (kz_pixel_t*, int, unsigned long*, unsigned long*,
-	unsigned long*, unsigned long*, unsigned int, unsigned int, kz_pixel_t*);
-
-/**************	 Start of actual code **************/
 #include <stdlib.h>			 /* To get prototypes of malloc() and free() */
-
-const unsigned int uiMAX_REG_X = 16;	  /* max. # contextual regions in x-direction */
-const unsigned int uiMAX_REG_Y = 16;	  /* max. # contextual regions in y-direction */
-
-
+#include <iostream>
 
 /************************** main function CLAHE ******************/
-int CLAHE (kz_pixel_t* pImage, unsigned int uiXRes, unsigned int uiYRes,
+int Clahe (kz_pixel_t* pImage, unsigned int uiXRes, unsigned int uiYRes,
 	 kz_pixel_t Min, kz_pixel_t Max, unsigned int uiNrX, unsigned int uiNrY,
 	      unsigned int uiNrBins, float fCliplimit)
 /*   pImage - Pointer to the input/output image
@@ -76,8 +33,10 @@ int CLAHE (kz_pixel_t* pImage, unsigned int uiXRes, unsigned int uiYRes,
     if (uiNrX > uiMAX_REG_X) return -1;	   /* # of regions x-direction too large */
     if (uiNrY > uiMAX_REG_Y) return -2;	   /* # of regions y-direction too large */
     if (uiXRes % uiNrX) return -3;	  /* x-resolution no multiple of uiNrX */
-    if (uiYRes & uiNrY) return -4;	  /* y-resolution no multiple of uiNrY */
+    if (uiYRes % uiNrY) return -4;	  /* y-resolution no multiple of uiNrY */
+    #ifdef IMAGE_12_BIT
     if (Max >= uiNR_OF_GREY) return -5;	   /* maximum too large */
+    #endif
     if (Min >= Max) return -6;		  /* minimum equal or larger than maximum */
     if (uiNrX < 2 || uiNrY < 2) return -7;/* at least 4 contextual regions required */
     if (fCliplimit == 1.0) return 0;	  /* is OK, immediately returns original image. */
@@ -99,8 +58,11 @@ int CLAHE (kz_pixel_t* pImage, unsigned int uiXRes, unsigned int uiYRes,
     for (uiY = 0, pImPointer = pImage; uiY < uiNrY; uiY++) {
 	for (uiX = 0; uiX < uiNrX; uiX++, pImPointer += uiXSize) {
 	    pulHist = &pulMapArray[uiNrBins * (uiY * uiNrX + uiX)];
+//std::cout<<"in MakeHistogram"<<std::endl;				
 	    MakeHistogram(pImPointer,uiXRes,uiXSize,uiYSize,pulHist,uiNrBins,aLUT);
+//std::cout<<"in ClipHistogram"<<std::endl;			
 	    ClipHistogram(pulHist, uiNrBins, ulClipLimit);
+//std::cout<<"in MapHistogram"<<std::endl;					
 	    MapHistogram(pulHist, Min, Max, uiNrBins, ulNrPixels);
 	}
 	pImPointer += (uiYSize - 1) * uiXRes;		  /* skip lines, set pointer */
@@ -178,20 +140,27 @@ void ClipHistogram (unsigned long* pulHistogram, unsigned int
        }
     }
 
+	pulEndPointer = &pulHistogram[uiNrGreylevels];
     while (ulNrExcess) {   /* Redistribute remaining excess  */
-	pulEndPointer = &pulHistogram[uiNrGreylevels]; pulHisto = pulHistogram;
+		//pulEndPointer = &pulHistogram[uiNrGreylevels];
+		
+		pulHisto = pulHistogram;
 
-	while (ulNrExcess && pulHisto < pulEndPointer) {
-	    ulStepSize = uiNrGreylevels / ulNrExcess;
-	    if (ulStepSize < 1) ulStepSize = 1;		  /* stepsize at least 1 */
-	    for (pulBinPointer=pulHisto; pulBinPointer < pulEndPointer && ulNrExcess;
-		 pulBinPointer += ulStepSize) {
-		if (*pulBinPointer < ulClipLimit) {
-		    (*pulBinPointer)++;	 ulNrExcess--;	  /* reduce excess */
+		while (ulNrExcess>0 && pulHisto < pulEndPointer) {
+			ulStepSize = uiNrGreylevels / ulNrExcess;
+			if (ulStepSize < 1) ulStepSize = 1;		  /* stepsize at least 1 */
+		
+			for (pulBinPointer=pulHisto; pulBinPointer < pulEndPointer && ulNrExcess; pulBinPointer += ulStepSize) {
+				if (*pulBinPointer < ulClipLimit) {
+					(*pulBinPointer)++;	 
+					//ulNrExcess--;	  /* reduce excess */
+				}
+				ulNrExcess--;	  /* reduce excess */
+			}
+			
+			pulHisto++;		  /* restart redistributing on other bin location */
 		}
-	    }
-	    pulHisto++;		  /* restart redistributing on other bin location */
-	}
+	//std::cout << "looping "<< ulNrExcess << std::endl;
     }
 }
 void MakeHistogram (kz_pixel_t* pImage, unsigned int uiXRes,
@@ -209,12 +178,27 @@ void MakeHistogram (kz_pixel_t* pImage, unsigned int uiXRes,
 
     for (i = 0; i < uiNrGreylevels; i++) pulHistogram[i] = 0L; /* clear histogram */
 
+	//pImagePointer = &pImage[uiSizeX];
+	pImagePointer = pImage+uiSizeX;
     for (i = 0; i < uiSizeY; i++) {
-	pImagePointer = &pImage[uiSizeX];
-	while (pImage < pImagePointer) pulHistogram[pLookupTable[*pImage++]]++;
-	pImagePointer += uiXRes;
-	pImage = &pImagePointer[-uiSizeX]; //uiSizeX is uint!!
+		//pImagePointer = &pImage[uiSizeX];
+		//pImagePointer = pImage+uiSizeX;
+		while (pImage < pImagePointer) {
+			pulHistogram[pLookupTable[*pImage++]]++;
+		}
+		pImagePointer += uiXRes;
+		pImage = pImagePointer-uiSizeX;
+		//pImage = &pImagePointer[-uiSizeX];
+	}
+	
+	/*
+	for (i = 0; i < uiSizeY; i++) {
+		pImagePointer = &pImage[uiSizeX];
+		while (pImage < pImagePointer) pulHistogram[pLookupTable[*pImage++]]++;
+		pImagePointer += uiXRes;
+		pImage = &pImagePointer[-uiSizeX];
     }
+	*/
 }
 
 void MapHistogram (unsigned long* pulHistogram, kz_pixel_t Min, kz_pixel_t Max,

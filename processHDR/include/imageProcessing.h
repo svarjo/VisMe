@@ -49,7 +49,17 @@ using namespace commonImage;
    * @return error code, zero if success negative on error
    */
    int normaliseGrayTo8bit( commonImage_t *input, commonImage_t *output );
-     
+  
+  /**
+   * Convert and normalise a gray scale image to 8 bit format (eg for displaying)
+   *
+   * @param input the image to be normalised to range 0-255
+   * @param output a pointer to fresh commonImage_t. output.data is expected to be NULL and a new buffer will be allocated (if not null it is freed).
+   * @return error code, zero if success negative on error
+   */
+   int normaliseGrayTo12bit( commonImage_t *input, commonImage_t *output );
+    
+  
   /**
    * Normalise a gray scale image to 32 bit format (eg for displaying)
    *

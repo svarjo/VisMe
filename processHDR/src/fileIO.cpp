@@ -3,7 +3,7 @@
  *
  * implement fileIO.h
  *
- * Sami Varjo 
+ * Sami Varjo 2014
  *****************************************************************/
 
 #include "fileIO.h"

@@ -6,7 +6,7 @@
  *
  * namespace:   FileIO::
  *
- * @author Sami Varjo 
+ * @author Sami Varjo 2013
  *****************************************************************/
 
 #ifndef FILE_IO_H

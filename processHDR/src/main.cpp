@@ -34,9 +34,12 @@ void printUsage(char* cmdStr)
 {
 	std::cout << "Usage: " << cmdStr << " <folder> -p <filePrefix> -s <fileSuffix> -o <outName> -e <file> -v"  << std::endl << std::endl;		  
 	std::cout << "<folder>          location of the image files to be stacked" << std::endl;
-	std::cout << "-p <filePrefix>   For example img (def) for files with name like imag0001.tif"<< std::endl;
-	std::cout << "-s <filePuffix>   For example .tif (def) for images img00003.tif" << std::endl;
-	std::cout << "-o <outName>      Output file name (will be tiff regardless of the suffix) (def) result.tif"<< std::endl;
+	std::cout << "-p <filePrefix>   select only files with the given prefix in <folder>" << std::endl;
+	std::cout << "                  eg. -p img (def) for files with name like imag0001.tif"<< std::endl;
+	std::cout << "-s <fileSuffix>   select only files with the given prefix in <folder>" << std::endl;
+	std::cout << "                  eg. -s .tif (def) for images img00003.tif" << std::endl;
+	std::cout << "-o <outName>      Output image name (will be tiff regardless of the suffix) (def) result.tif"<< std::endl;
+	std::cout << "-8b 		        save 8 bit output image data (def 32 bit)"<< std::endl;
 	std::cout << "-e <file>         If given load exposure times from given file (one per line as ascii)"<< std::endl;
 	std::cout << "-c                Apply CLAHE (contrast limited adaptive histogram equalization) on the hdr stack" << std::endl;
 	std::cout << "-r                Compute retinex filter response (mean response out to std::out) (by default raw mean)" << std::endl;
@@ -63,6 +66,7 @@ int main(int argc, char** argv)
   bool saveResultImage = false;
   bool doRetinexFiltering = false;
   bool doCLAHE = false;
+  bool save8bitImage = false;
   
   float expTimesDef[] = { 25,50,100,200,400,800,1600,3200,6400,12800,25600,
 						   51200,102400,204800,409600,819200,1638400,3276800,		
@@ -102,6 +106,9 @@ int main(int argc, char** argv)
 		outName = argv[++i];
 		saveResultImage = true;
 	  }
+	  else if (argStr == "-8b"){
+		save8bitImage = true;
+	  }	  
 	  else if (argStr == "-v"){
 		verbose = true;
 	  }
@@ -199,6 +206,12 @@ int main(int argc, char** argv)
 	imageStack.push_back(imIn);	
   }
   
+  if (imageStack.size() < 1 ){
+	std::cout << "Error while loading image stack" << std::endl; 
+	exit(-3);
+  }
+  
+  
   ////////////////////////////////////////////////////////////////////////////////
   //
   // The actual image stack processing  (there is room to optimize so that 
@@ -222,25 +235,46 @@ int main(int argc, char** argv)
   double resSum;
   
   if (doCLAHE){    
-    
-std::cout << "CLAHE has some bugs! Bailing out!!!  " << std::endl;
-exit(-1);
+
 	
-	normaliseGrayTo8bit( &hdrImage, &workCopy);		
-		
-	CLAHE(	(kz_pixel_t*) workCopy.data, 			//image data
-			workCopy.width, workCopy.height, 		//image size X,Y
-			0, 255, 								//value range (both in and out)
-			4,4,									//number of regions in x,y (min 2, max uiMAX_REG_X)
-			1024,									//Number of greybins for histogram ("dynamic range")
-			0.01);									//Normalized cliplimit, A clip limit smaller than 1 
-			
+//	normaliseGrayTo8bit( &hdrImage, &workCopy);		
+	normaliseGrayTo12bit( &hdrImage, &workCopy);	//OBS is this the best way? 
+													//alt - do clahe for each image prior stacking?
+	
+	if (verbose){
+		std::cout << "Applying Contrast Limited Adaptive Histogram Equalization (CLAHE)" << std::endl;
+	}
+	
+	//TODO what are the "BEST" parameters for CLAHE?
+	int rval= Clahe(	(kz_pixel_t*) workCopy.data, 			//image data
+						workCopy.width, workCopy.height, 		//image size X,Y
+						0, 4095, 								//value range (both in and out)
+						32,32,									//number of regions in x,y (min 2, max uiMAX_REG_X)
+						16380,									//Number of greybins for histogram ("dynamic range") 
+						0.01);									//Normalized cliplimit, A clip limit smaller than 1 
+						
+	/* //These params give "nice" results with retinex for ligting normalization ie use -r -c
+	int rval= Clahe(	(kz_pixel_t*) workCopy.data, 			//image data
+						workCopy.width, workCopy.height, 		//image size X,Y
+						0, 4095, 								//value range (both in and out)
+						32,32,									//number of regions in x,y (min 2, max uiMAX_REG_X)
+						32760,									//Number of greybins for histogram ("dynamic range") 
+						0.01);									//Normalized cliplimit, A clip limit smaller than 1 
+	*/
+	
+	if (rval < 0) {
+		std::cout << "WARNING CLAHE error  " << rval << std::endl;			
+	}	
 	normaliseGrayToFloat(&workCopy, &hdrImage);
   }  
   
   if (doRetinexFiltering) {
 	//  normaliseGrayToFloat( &hdrImage, &workCopy );   //TODO check normalisation to double effect
 	//  multiscaleRetinexFilter( &workCopy, &hdrImage); 
+	if (verbose){
+		std::cout << "Applying Retinex filter" << std::endl;
+	}
+	
 	multiscaleRetinexFilter( &hdrImage, &workCopy ); 	
 	normaliseGrayToFloat(&workCopy, &workCopy);
 	
@@ -259,7 +293,12 @@ exit(-1);
   std::cout << resSum << std::endl;
 	
   if (saveResultImage) {  
-	normaliseGrayTo32bit(&workCopy, &imageOut);  //TIFF 32bit int (retain most information) 
+	if (save8bitImage){
+		normaliseGrayTo8bit(&workCopy, &imageOut);  //TIFF 32bit int (retain most information) 
+	}	
+	else{
+		normaliseGrayTo32bit(&workCopy, &imageOut);  //TIFF 32bit int (retain most information) 
+	}
 	saveTIFF( outName.c_str(), &imageOut, COMPRESSION_ZIP);  
   }
   //Clean UP  
