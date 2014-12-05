@@ -53,8 +53,8 @@
 #
 # (You can infact invoke this README.txt to reproduce the results if you have the data)
 
-./bin/x86_64bit/processHDR data/2014-08-15_12h00m29s/ -o data/res2_clahe.tif -e data/expTimes.txt -v -c -8b
 ./bin/x86_64bit/processHDR data/2014-08-15_00h00m01s/ -o data/res1_clache.tif -v -c -8b
+./bin/x86_64bit/processHDR data/2014-08-15_12h00m29s/ -o data/res2_clahe.tif -e data/expTimes.txt -v -c -8b
 ./bin/x86_64bit/processHDR data/2014-08-15_00h00m01s/ -o data/res1.tif -r -c
 ./bin/x86_64bit/processHDR data/2014-08-15_12h00m29s/ -o data/res2.tif -e data/expTimes.txt -c -r
 

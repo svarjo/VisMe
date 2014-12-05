@@ -245,15 +245,17 @@ int main(int argc, char** argv)
 		std::cout << "Applying Contrast Limited Adaptive Histogram Equalization (CLAHE)" << std::endl;
 	}
 	
-	//TODO what are the "BEST" parameters for CLAHE?
+	//TODO what are the "BEST" parameters for CLAHE? 
+	//this is ok for decent viewing
 	int rval= Clahe(	(kz_pixel_t*) workCopy.data, 			//image data
 						workCopy.width, workCopy.height, 		//image size X,Y
 						0, 4095, 								//value range (both in and out)
-						32,32,									//number of regions in x,y (min 2, max uiMAX_REG_X)
-						16380,									//Number of greybins for histogram ("dynamic range") 
-						0.01);									//Normalized cliplimit, A clip limit smaller than 1 
+						16,16,									//number of regions in x,y (min 2, max uiMAX_REG_X) OBS x%==0!
+						256,									//Number of greybins for histogram ("dynamic range") 
+						10.000);								//Normalized cliplimit, A clip limit
 						
 	/* //These params give "nice" results with retinex for ligting normalization ie use -r -c
+	//obs either Nbins down and cliplimit up or bins up and limit down...
 	int rval= Clahe(	(kz_pixel_t*) workCopy.data, 			//image data
 						workCopy.width, workCopy.height, 		//image size X,Y
 						0, 4095, 								//value range (both in and out)
