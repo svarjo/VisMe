@@ -24,7 +24,7 @@
 # data      some example test data and example results
 # include   c/c++ include files
 # obj       object files from Makefile
-# src 		c/c++ project files 
+# src       c/c++ project files 
 # Makefile  invoke make to build the project 
 #
 ########################################################

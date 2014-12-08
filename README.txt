@@ -2,8 +2,8 @@
 # camCtrl - Vimba based camera control software to capture image stacks with 
 #           given interval 
 #
-# processHDR - Image processing to produce HDR data from image stacks 
-#              filtering and response from data (and result image out)
+# processHDR - Image processing to produce HDR data from image stacks, 
+#              filtering and some response from data (and result image out)
 #
 
 #to check out local git repository:

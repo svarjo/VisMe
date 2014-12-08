@@ -1,0 +1,9 @@
+## 1
+# Merge the processHDR stack handling with the image capture:
+# -now full stack of images is saved per capture as LZW-compressed 32-bit tiffs.
+#  This requires up to 40 MB of space per stack (10 min interval -> 5.8GB/day). 
+# -may be reduced to 0.28GB/day if only the compiled stack is saved. 
+# 
+
+## 2
+# Change sumImage to one from processHDR stack (using exptime weighting)

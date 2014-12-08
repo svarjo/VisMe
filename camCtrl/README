@@ -1,5 +1,21 @@
 # camCtrl software 
-# Instructions
+#
+# The main purpose of this software is to capture image stacks from Vimba GigE cameras
+# over internet for creating HDR data with varying lighting conditions. 
+# The software captures predefined number of images in a sequence with given exposure-
+# times. 
+# 
+# There are several possibilities for naming the folders for images and also 
+# several methods are offered for capture. However, only the basic stack capture
+# is tested and have some reliablity...
+#
+# For processing a stack of images please see the processHDR program. 
+#
+# 2013  Sami Varjo - University of Oulu, Finland
+#
+###################################################################################
+#
+# Instructions to build
 #
 # For checking and installing dependencies please run as reqular user:
 ./chk_AVT_sdk
@@ -11,7 +27,7 @@
 # If all dependencies are correlctly set (or corrected in Makefile) one can 
 # build the binary by invoking make. The binary file is created for x86 or x64 
 # depending on the build platform. The resulting binary is located under bin/ 
-# directory.
+# directory. Also the required vimba binaries are copied in the output folder. 
 make
 #
 # To removes all build files - including the created binary invoke make clean
@@ -22,6 +38,21 @@ make
 #be created at doc/html. For changing output please modify doc/config settings.
 make mydoc
 
-
-
-
+###################################
+# 
+# The program uses setup.ini for initialization of image capturing parameters. 
+# The parameters should be selfexplanatory - if not please read the source code. 
+#
+# The program was written for multiple cameras but without parallel threads so 
+# either FIX the code or be very cauntious when using multiple cameras (not tested)
+#
+# PROBLEM SOLVING:
+#
+# If you have problems running the software, especially you encounter 
+# "CamCtrlVmbAPI::Init : VIMBA sytem startup failed : -16" - error please verify
+# that you have installed the drivers correctly and the person invoking the program
+# has the privileges to use the drivers. An easy fix is to copy the ".cti-file"
+# (TransportLayer) to the same directory as the binary... 
+#
+# Also make sure that program has writing permission to the output folder. 
+#
