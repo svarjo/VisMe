@@ -1,0 +1,28 @@
+dataSet: HDRVisMe-retinex-y-proj-grad-5h
+pca explained limit: 1.000000
+N features after pca: 542
+Use Hellinger-kernel on data: 0
+
+SVM kernel: rbf
+tolkkt 0.000001  kktviolationlevel 0.000001 autoscale:0
+N trainset tot: 5459
+N testset  tot: 1328
+N classes: 5
+class labels: 400 1000 5000 15000 35000 
+
+gridSearch C(row) vs rbf_sigma(col) F1-measuremax F1-measure: 0.872741 @(1,1) == (5.359375,1.562500)
+C:
+5.359375	
+rbf_sigma:
+1.562500	
+
+C vs rbf_sigma data (F1_C_sigma):
+0.872741	
+
+Last confusion matrix:
+
+10.000000	4.000000	0.000000	0.000000	0.000000	
+0.000000	22.000000	7.000000	0.000000	0.000000	
+0.000000	3.000000	115.000000	23.000000	0.000000	
+0.000000	0.000000	17.000000	325.000000	57.000000	
+0.000000	0.000000	1.000000	57.000000	687.000000	
