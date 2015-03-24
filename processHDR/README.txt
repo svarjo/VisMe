@@ -15,7 +15,7 @@
 #   Singapore, Nov 1-5. 2014
 #
 #  Sami Varjo 2014, University of Oulu, Finland
-#  sami.varjo@cc.oulu.fi
+#  sami.varjo@ee.oulu.fi
 #
 #############################################################################################
 #
