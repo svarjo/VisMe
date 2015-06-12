@@ -10,9 +10,8 @@
 #############################################################################################
 # Please use reference:
 #
-#   Varjo, Sami; Hannuksela, Jari; "Image Based Visibility Estimation During Day and Night"
-#   Proc. ACCV Workshop on Feature and Similarity Learning for Computer Vison (FSLCV2014),
-#   Singapore, Nov 1-5. 2014
+#  Varjo, Sami; Hannuksela, Jari "Image Based Visibility Estimation During Day and Night",
+#  in C.V. Jawahar and S.Shann(Eds.): ACCV 2014 Workshops, Part III, LNCS 9010, pp. 277-289, 2015 
 #
 #  Sami Varjo 2014, University of Oulu, Finland
 #  sami.varjo@ee.oulu.fi
