@@ -9,9 +9,8 @@
 #              Feature and Similarity Learning for Computer Vison (FSLCV) 
 #
 # 	[ref]:
-#   Varjo S & Hannuksela J (2014)
-#   "Image Based Visibility Estimation During Day and Night"
-#   Lecture Notes in Computer Science, ACCV 2014 Workshops, Springer
+#   Varjo, Sami; Hannuksela, Jari "Image Based Visibility Estimation During Day and Night",
+#   in C.V. Jawahar and S.Shann(Eds.): ACCV 2014 Workshops, Part III, LNCS 9010, pp. 277-289, 2015 
 #
 # If you use processHDR or Matlab code please refer to the work given in above [ref]
 # Sami Varjo 2014
